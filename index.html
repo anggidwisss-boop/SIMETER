@@ -3,129 +3,110 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
-<meta name="theme-color" content="#f7f8fa">
+<meta name="theme-color" content="#1264d8">
 <link rel="manifest" href="manifest.json">
 <link rel="stylesheet" href="style.css">
-<title>SIMETER</title>
+<title>SIMETER - Sistem Informasi Pemeliharaan Meter</title>
 </head>
 <body>
-<div id="app">
-<header class="top">
-  <div class="pm"><b>PM</b><span id="headerTitle">Ringkasan</span></div>
-  <button id="bell" class="bell">♧</button>
-</header>
+<header class="header"><div><b>SIMETER</b><small>Sistem Informasi Pemeliharaan Meter</small></div><span id="net">● Online</span></header>
 
 <main>
-<section id="home" class="screen active">
-  <div class="welcome"><div><small>Selamat datang</small><h1>Ringkasan</h1></div><span class="online">● Online</span></div>
-  <div class="stats">
-    <div class="stat"><i class="violet">◈</i><b id="totalAssets">0</b><small>Total Aset</small></div>
-    <div class="stat"><i class="yellow">⚒</i><b id="dueAssets">0</b><small>Jatuh Tempo</small></div>
-    <div class="stat"><i class="red">△</i><b id="badAssets">0</b><small>Kondisi Tidak Normal</small></div>
-    <div class="stat"><i class="cyan">▣</i><b id="openTasks">0</b><small>Tugas Terbuka</small></div>
-  </div>
-  <div class="info-card">
-    <div class="info-icon">⚡</div>
-    <div><p>Modul aset, scan maintenance, dan daftar tugas tersedia di aplikasi.</p><button data-screen="scan">📷 Scan Maintenance</button></div>
-  </div>
-  <div class="section-title"><b>Maintenance Terakhir</b><button data-screen="tasks">Lihat semua</button></div>
-  <div id="recent" class="stack"></div>
+<section id="dashboard" class="page active">
+ <div class="hero"><div><small>Dashboard</small><h1>Ringkasan Pemeliharaan Meter</h1><p>Monitoring aset meter, pemeriksaan, GPS, foto, dan riwayat pemeliharaan.</p></div></div>
+ <div class="stats">
+  <div class="stat"><small>Total Meter</small><b id="sMeters">0</b></div>
+  <div class="stat"><small>Maintenance</small><b id="sMaint">0</b></div>
+  <div class="stat"><small>Tidak Normal</small><b id="sBad">0</b></div>
+  <div class="stat"><small>Offline Queue</small><b id="sOffline">0</b></div>
+ </div>
+ <div class="quick">
+  <button data-page="scan">📷<b>Scan Meter</b><small>Barcode / QR</small></button>
+  <button data-page="maintenance">🛠️<b>Pemeliharaan</b><small>Input pemeriksaan</small></button>
+  
+  <button data-page="history">🕘<b>Riwayat</b><small>Histori pekerjaan</small></button>
+ </div>
+ <div class="section"><h2>Maintenance Terakhir</h2><button data-page="history">Lihat semua</button></div>
+ <div id="recent" class="list"></div>
 </section>
 
-<section id="assets" class="screen">
-  <div class="crumb">Aset <span>›</span> Semua</div>
-  <div class="screen-head"><h1>Daftar Aset</h1><button id="assetRefresh">↻</button></div>
-  <input id="assetSearch" class="search" placeholder="Cari nomor meter, ID pelanggan, nama...">
-  <div id="assetList" class="stack"></div>
+
+<section id="scan" class="page">
+ <div class="page-title"><h1>Scan Barcode / QR Meter</h1></div>
+ <div class="scanbox">
+  <div id="reader"></div><div id="scanHint">Arahkan kamera ke barcode/QR meter</div>
+  <button id="scanStart">📷 Mulai Scan</button><button id="scanStop" class="gray hidden">Hentikan</button>
+  <p id="scanStatus"></p>
+ </div>
+ <div class="card"><label>Atau masukkan nomor meter</label><div class="row"><input id="meterNo" inputmode="numeric" placeholder="Nomor meter"><button id="searchMeter">Cari</button></div></div>
 </section>
 
-<section id="assetDetail" class="screen">
-  <div class="crumb">Aset <span>›</span> <b id="detailCrumb">A1</b></div>
-  <div class="detail-card">
-    <div class="detail-top"><div><h1 id="detailName">A1</h1><span id="detailMeter">24126010982</span></div><span class="normal">● Normal</span><button>✎</button></div>
-    <div class="detail-grid">
-      <div><small>Kategori</small><b id="detailCategory">-</b></div>
-      <div><small>Sub Kategori</small><b>-</b></div>
-      <div><small>Merek</small><b id="detailBrand">-</b></div>
-      <div><small>Status Aset</small><b class="active-status">● Aktif</b></div>
-      <div><small>Interval Maintenance</small><b>30 hari</b></div>
-      <div><small>Maintenance Terakhir</small><b id="detailLast">-</b></div>
-      <div><small>Jadwal Berikutnya</small><b id="detailNext">-</b></div>
-    </div>
-  </div>
-  <div class="section-title plain"><b>Riwayat Maintenance</b></div>
-  <div id="detailHistory" class="stack"></div>
+<section id="maintenance" class="page">
+ <div class="page-title"><h1>Pemeliharaan Meter</h1></div>
+ <form id="maintForm" class="card">
+  <div class="info"><small>Data pelanggan diisi langsung pada form, tanpa pencarian MASTER_METER.</small></div>
+  <label>ID Pelanggan</label><input id="idPelanggan" placeholder="Masukkan ID pelanggan">
+  <label>Nomor Meter</label><input id="nomorMeter" placeholder="Masukkan atau scan nomor meter">
+  <label>Nama Pelanggan</label><input id="custName" placeholder="Nama pelanggan">
+  <label>Alamat</label><input id="custAddress" placeholder="Alamat pelanggan">
+  <label>Jenis Pemeliharaan</label>
+  <select id="jenis"><option>Pemeriksaan meter</option><option>Pemeriksaan rutin</option><option>Pemeriksaan akurasi</option><option>Pemeriksaan terminal</option><option>Pemeriksaan segel</option><option>Penggantian meter</option><option>Perbaikan meter</option></select>
+  <label>Kondisi Meter</label><select id="kondisi"><option>Baik</option><option>Perlu Perhatian</option><option>Tidak Normal</option><option>Rusak</option></select>
+  <label>Kondisi Segel</label><select id="segel"><option>Baik</option><option>Rusak</option><option>Hilang</option><option>Tidak Ada</option></select>
+  <label>Stand Meter (kWh)</label><input id="stand" type="number" min="0" placeholder="Contoh 1250">
+  <label>Hasil Pemeriksaan</label><textarea id="hasil" rows="3" placeholder="Hasil pemeriksaan"></textarea>
+  <label>Keterangan</label><textarea id="keterangan" rows="3" placeholder="Catatan"></textarea>
+  <div class="gps"><div><b>GPS</b><small id="gpsStatus">Belum diambil</small></div><button type="button" id="gpsBtn" class="gray">Ambil GPS</button></div>
+  <label>Foto Meter</label><input id="foto" type="file" accept="image/*" capture="environment">
+  <img id="fotoPreview" class="preview hidden">
+  <button class="primary" type="submit">💾 Simpan Pemeliharaan</button>
+  <button class="gray" type="button" id="resetForm">Bersihkan</button>
+  <p id="saveStatus"></p>
+ </form>
 </section>
 
-<section id="scan" class="screen">
-  <div class="screen-head"><h1>Scan Maintenance</h1></div>
-  <div class="scan-card">
-    <div id="reader"></div>
-    <div id="scanPlaceholder"><div class="camera">⌾</div><h2>Scan Barcode / QR Meter</h2><p>Scan barcode meter untuk mengambil data pelanggan secara otomatis.</p></div>
-    <button id="startScan">📷 Mulai Scan</button>
-    <button id="stopScan" class="secondary hidden">Hentikan Kamera</button>
-    <p id="scanMsg"></p>
-  </div>
-  <div class="card">
-    <label>Nomor Meter</label>
-    <div class="row"><input id="manualMeter" inputmode="numeric" placeholder="Masukkan nomor meter"><button id="findMeter">Cari</button></div>
-  </div>
-  <form id="maintenanceForm" class="card hidden">
-    <div class="found"><b id="customerName">-</b><small id="customerAddress">-</small></div>
-    <label>ID Pelanggan</label><input id="fId" readonly>
-    <label>Nomor Meter</label><input id="fMeter" readonly>
-    <label>Jenis Maintenance</label><select id="fJenis"><option>Pemeriksaan meter</option><option>Pemeriksaan rutin</option><option>Penggantian meter</option><option>Pemeriksaan segel</option><option>Pemeriksaan terminal</option></select>
-    <label>Kondisi Meter</label><select id="fKondisi"><option>Baik</option><option>Perlu perhatian</option><option>Rusak</option><option>Tidak normal</option></select>
-    <label>Kondisi Segel</label><select id="fSegel"><option>Baik</option><option>Rusak</option><option>Hilang</option><option>Tidak ada</option></select>
-    <label>Stand Meter (kWh)</label><input id="fStand" type="number" placeholder="Contoh: 1250">
-    <label>Hasil Pemeriksaan</label><textarea id="fHasil" rows="3"></textarea>
-    <label>Keterangan</label><textarea id="fKet" rows="3"></textarea>
-    <div class="gps"><span id="gpsText">GPS belum diambil</span><button type="button" class="secondary" id="getGps">Ambil GPS</button></div>
-    <label>Foto Meter</label><input id="fFoto" type="file" accept="image/*" capture="environment">
-    <img id="preview" class="preview hidden">
-    <button type="submit">Simpan Maintenance</button><p id="saveMsg"></p>
-  </form>
+<section id="history" class="page">
+ <div class="page-title"><h1>Riwayat Pemeliharaan</h1><button id="reloadHistory">↻</button></div>
+ <input id="historySearch" class="search" placeholder="Cari nomor meter / pelanggan / petugas">
+ <div id="historyList" class="list"></div>
 </section>
 
-<section id="tasks" class="screen">
-  <div class="screen-head"><h1>Tugas</h1><button id="historyRefresh">↻</button></div>
-  <div class="tabs"><button class="selected">Semua</button><button>Terbuka</button><button>Selesai</button></div>
-  <div id="taskList" class="stack"></div>
+<section id="tasks" class="page">
+ <div class="page-title"><h1>Tugas / Follow Up</h1></div>
+ <div class="card"><p>Daftar pekerjaan yang memerlukan tindak lanjut.</p><div id="taskList" class="list"></div></div>
 </section>
 
-<section id="admin" class="screen">
-  <div class="page-title"><span>PM</span><b>Admin</b><button class="bell">♧</button></div>
-  <div class="tabs three"><button>Tenant</button><button class="selected">Role & Izin</button><button>Pengguna</button></div>
-  <div class="admin-card"><div class="admin-title"><div><h2>Super Admin</h2><small>SUPER_ADMIN</small></div><button>✎</button></div>
-    <div class="chips"><span>SUPER_ADMIN</span><span>Ekspor Data dari Excel</span><span>Import Aset dari Excel</span><span>Kelola Tenant, Role & Pengguna</span><span>Kelola Aset (kategori, sub kategori, status)</span><span>Scan Maintenance Rutin</span><span>Jadi Atasan - Delegasikan & Kelola Tugas Follow Up</span><span>Jadi Teknisi - Eksekusi Tugas Follow Up</span></div>
-  </div>
-  <button class="fab">＋</button>
+<section id="admin" class="page">
+ <div class="page-title"><h1>Admin & Hak Akses</h1></div>
+ <div class="card"><h2>Super Admin</h2><p>Kelola data meter, sinkronisasi, role, pengguna, dan konfigurasi aplikasi.</p>
+ <div class="chips"><span>Kelola Master Meter</span><span>Import / Export</span><span>Scan Maintenance</span><span>Kelola Petugas</span><span>Kelola Tugas</span><span>Dashboard</span></div></div>
+ <div class="card"><h3>Data Petugas</h3><div id="petugasList"></div></div>
 </section>
 
-<section id="profile" class="screen">
-  <div class="page-title"><span>PM</span><b>Profil</b><button class="bell">♧</button></div>
-  <div class="profile-card"><div class="avatar">◎</div><h2>Putra</h2><p>@Putra1</p></div>
-  <div class="notification-card"><div>♧ <b>Notifikasi Perangkat</b><small>Nonaktif</small></div><button>Aktifkan</button></div>
-  <div class="edit-card"><h3>Edit Profil</h3><label>Nama Lengkap</label><input value="Putra"><label>Kata Sandi Saat Ini</label><input placeholder="Isi jika ingin ganti kata sandi"><label>Kata Sandi Baru</label><input><button>Simpan Perubahan</button></div>
+<section id="profile" class="page">
+ <div class="page-title"><h1>Profil</h1></div>
+ <div class="card profile"><div class="avatar">👤</div><h2>Petugas SIMETER</h2><small>Teknisi Pemeliharaan Meter</small></div>
+ <div class="card"><label>Nama Petugas</label><input id="petugas" placeholder="Nama petugas"><label>ULP / Unit</label><input id="unit" placeholder="UP3 / ULP"><button class="primary" id="saveProfile">Simpan Profil</button></div>
 </section>
 
-<section id="settings" class="screen">
-  <div class="screen-head"><h1>Pengaturan</h1></div>
-  <div class="card"><label>URL Web App Google Apps Script</label><input id="apiUrl" placeholder="https://script.google.com/macros/s/.../exec"><button id="saveApi">Simpan & Tes Koneksi</button><p id="apiMsg"></p></div>
-  <div class="card"><b>Database</b><p>MASTER_METER untuk data aset. PEMELIHARAAN untuk riwayat maintenance.</p><button class="secondary" id="sync">↻ Sinkronkan Data</button></div>
+<section id="settings" class="page">
+ <div class="page-title"><h1>Pengaturan</h1></div>
+ <div class="card"><label>URL Web App Google Apps Script</label><input id="apiUrl" placeholder="https://script.google.com/macros/s/.../exec"><button class="primary" id="saveApi">Simpan & Tes Koneksi</button><p id="apiStatus"></p></div>
+ <div class="card"><h3>Sinkronisasi</h3><p>Gunakan tombol ini setelah kembali online untuk mengirim data offline.</p><button class="primary" id="syncBtn">↻ Sinkronkan Sekarang</button><p id="syncStatus"></p></div>
+ <div class="card"><h3>Database</h3><p>MASTER_METER = data meter. PEMELIHARAAN = histori. PETUGAS = data teknisi.</p></div>
 </section>
 </main>
 
-<div id="otherMenu" class="modal hidden"><div class="modal-bg"></div><div class="modal-box"><div class="modal-head"><b>Menu Lainnya</b><button id="closeModal">×</button></div><div class="modal-links"><button data-screen="admin">♢<small>Admin</small></button><button data-screen="profile">◎<small>Profil</small></button></div></div></div>
-
 <nav class="bottom">
-<button data-screen="home">☰<small>Home</small></button>
-<button data-screen="home" id="summaryNav">▦<small>Ringkasan</small></button>
-<button data-screen="assets">◈<small>Aset</small></button>
-<button data-screen="scan">⌾<small>Scan</small></button>
-<button data-screen="tasks">☷<small>Tugas</small></button>
+ <button data-page="dashboard">⌂<small>Beranda</small></button>
+ 
+ <button data-page="scan">⌾<small>Scan</small></button>
+ <button data-page="maintenance">🛠<small>Rawat</small></button>
+ <button data-page="history">☷<small>Riwayat</small></button>
+ <button id="more">•••<small>Lainnya</small></button>
 </nav>
-<button id="moreBtn" class="more">＋</button>
+<div id="moreMenu" class="modal hidden"><div class="shade"></div><div class="sheet"><div class="sheethead"><b>Menu Lainnya</b><button id="closeMore">×</button></div><button data-page="tasks">📋 Tugas / Follow Up</button><button data-page="admin">⚙ Admin</button><button data-page="profile">👤 Profil</button><button data-page="settings">🔧 Pengaturan</button></div></div>
+
 <script src="https://unpkg.com/html5-qrcode" defer></script>
 <script src="app.js" defer></script>
 </body></html>
