@@ -3,6 +3,18 @@ let API = localStorage.getItem("simeter_api_url") || "";
 let USER = null, meters = [], tasks = [], history = [], currentPage = "dashboard", scanner = null;
 
 window.addEventListener("DOMContentLoaded", () => {
+  // Pastikan modal TIDAK pernah muncul pada halaman login.
+  const modal = $("modal");
+  if (modal) {
+    modal.hidden = true;
+    modal.setAttribute("aria-hidden", "true");
+    modal.style.setProperty("display", "none", "important");
+  }
+  // Bersihkan service worker/cache versi lama yang dapat mempertahankan modal kosong.
+  if ("serviceWorker" in navigator) {
+    navigator.serviceWorker.getRegistrations().then(rs => rs.forEach(r => r.unregister())).catch(() => {});
+    if (window.caches) caches.keys().then(keys => keys.forEach(k => caches.delete(k))).catch(() => {});
+  }
   $("apiUrl").value = API;
   $("togglePass").onclick = () => { $("loginPass").type = $("loginPass").type === "password" ? "text" : "password"; };
   $("saveApi").onclick = saveApi;
@@ -174,8 +186,8 @@ async function saveTask() { try { const r = await request("saveTask", { method: 
 function renderAdminTasks() { $("adminContent").innerHTML = `<div class="card"><h2>Penugasan</h2><button id="adminNewTask" class="primary">+ Penugasan Baru</button><div id="adminTaskList">Memuat...</div></div>`; $("adminNewTask").onclick = newTask; loadAdminTasks(); }
 async function loadAdminTasks() { try { const r = await request("getTasks"); const a = r.data || []; $("adminTaskList").innerHTML = a.map(t => `<div class="meter-card"><b>${esc(t.nomorMeter || "-")}</b><div>${esc(t.petugas || t.assignee || "-")} · ${esc(t.judul || "")}</div><small>${esc(t.status || "TERBUKA")} · ${esc(t.jatuhTempo || "-")}</small></div>`).join("") || '<div class="empty">Belum ada penugasan.</div>'; } catch(e) { $("adminTaskList").innerHTML = '<div class="alert danger">' + esc(e.message) + '</div>'; } }
 function showNotifications() { const a = meters.filter(m => m.jatuhTempo && daysUntil(m.jatuhTempo) <= 7); showModal(`<h2>Notifikasi</h2>${a.map(m => `<div class="alert ${daysUntil(m.jatuhTempo) < 0 ? "danger" : ""}">⚠ <b>${esc(m.nomorMeter)}</b> — ${daysUntil(m.jatuhTempo) < 0 ? "terlambat" : "jatuh tempo " + esc(m.jatuhTempo)}</div>`).join("") || '<div class="empty">Tidak ada jatuh tempo ≤ 7 hari.</div>'}`); }
-function showModal(html) { const modal = $("modal"), body = $("modalBody"); body.innerHTML = html || '<div class="empty">Tidak ada informasi.</div>'; modal.hidden = false; modal.setAttribute("aria-hidden", "false"); body.scrollTop = 0; requestAnimationFrame(() => { const first = body.querySelector("input,select,textarea,button"); if (first) first.focus({ preventScroll: true }); }); }
-function closeModal() { $("modal").hidden = true; $("modal").setAttribute("aria-hidden", "true"); $("modalBody").innerHTML = ""; }
+function showModal(html) { const modal = $("modal"), body = $("modalBody"); if (!modal || !body) return; body.innerHTML = html || '<div class="empty">Tidak ada informasi.</div>'; modal.hidden = false; modal.setAttribute("aria-hidden", "false"); modal.style.setProperty("display", "grid", "important"); body.scrollTop = 0; requestAnimationFrame(() => { const first = body.querySelector("input,select,textarea,button"); if (first) first.focus({ preventScroll: true }); }); }
+function closeModal() { const modal = $("modal"); if (!modal) return; modal.hidden = true; modal.setAttribute("aria-hidden", "true"); modal.style.setProperty("display", "none", "important"); $("modalBody").innerHTML = ""; }
 function daysUntil(d) { const a = new Date(); a.setHours(0,0,0,0); const b = new Date(d); b.setHours(0,0,0,0); return Math.ceil((b-a)/86400000); }
 function esc(v) { return String(v ?? "").replace(/[&<>"']/g, c => ({"&":"&amp;","<":"&lt;",">":"&gt;","\"":"&quot;","'":"&#39;"}[c])); }
 
