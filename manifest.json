@@ -1,1 +1,9 @@
-{"name":"SIMETER - Pemeliharaan Meter","short_name":"SIMETER","start_url":"./","scope":"./","display":"standalone","background_color":"#f4f6f9","theme_color":"#1164d8","description":"Sistem Informasi Pemeliharaan Meter PLN","icons":[] }
+{
+  "name":"SIMETER - Sistem Informasi Pemeliharaan Meter",
+  "short_name":"SIMETER",
+  "start_url":"./",
+  "display":"standalone",
+  "background_color":"#f4f7fb",
+  "theme_color":"#1769e0",
+  "icons":[]
+}
