@@ -1,223 +1,39 @@
-const $ = x => document.getElementById(x);
-
-let api = localStorage.getItem("simeter_api_url") || "";
-let gps = {};
-let meters = [];
-let hist = [];
-let qr = null;
-let lookupTimer = null;
-
-document.addEventListener("DOMContentLoaded", () => {
-  if ($("api")) $("api").value = api;
-  tabs(); events(); loadLocal(); render();
-  if (api) { loadMeters(); loadHistory(); }
-  if (navigator.serviceWorker) navigator.serviceWorker.register("sw.js").catch(() => {});
-  if (api) test();
+let API=localStorage.getItem("simeter_api_url")||"",meters=[],history=[],gps={},photo="",scanner=null;
+const $=x=>document.getElementById(x);
+document.addEventListener("DOMContentLoaded",()=>{
+ if($("apiUrl"))$("apiUrl").value=API;
+ document.querySelectorAll("[data-screen]").forEach(b=>b.onclick=()=>go(b.dataset.screen));
+ $("assetRefresh").onclick=loadMeters;$("historyRefresh").onclick=loadHistory;$("sync").onclick=sync;
+ $("saveApi").onclick=saveApi;$("findMeter").onclick=()=>lookup($("manualMeter").value.trim());
+ $("manualMeter").onkeydown=e=>{if(e.key==="Enter"){e.preventDefault();lookup($("manualMeter").value.trim())}};
+ $("assetSearch").oninput=renderAssets;$("startScan").onclick=startScan;$("stopScan").onclick=stopScan;
+ $("getGps").onclick=getGps;$("fFoto").onchange=previewPhoto;$("maintenanceForm").onsubmit=saveRecord;
+ $("moreBtn").onclick=()=>$("otherMenu").classList.remove("hidden");$("closeModal").onclick=closeModal;
+ $("otherMenu").querySelector(".modal-bg").onclick=closeModal;
+ loadLocal();sync();setNav("home");
+ if("serviceWorker"in navigator)navigator.serviceWorker.register("sw.js").catch(()=>{});
 });
-
-function tabs() {
-  document.querySelectorAll(".tab").forEach(btn => {
-    btn.onclick = () => {
-      stopScanner();
-      document.querySelectorAll(".tab").forEach(x => x.classList.remove("active"));
-      document.querySelectorAll(".panel").forEach(x => x.classList.remove("active"));
-      btn.classList.add("active");
-      const panel = $(btn.dataset.t);
-      if (panel) panel.classList.add("active");
-      if (btn.dataset.t === "meter") loadMeters();
-      if (btn.dataset.t === "history") loadHistory();
-    };
-  });
+function closeModal(){$("otherMenu").classList.add("hidden")}
+function go(id){
+ closeModal();document.querySelectorAll(".screen").forEach(s=>s.classList.remove("active"));$(id).classList.add("active");
+ const titles={home:"Ringkasan",assets:"Aset",assetDetail:"Aset",scan:"Scan",tasks:"Tugas",admin:"Admin",profile:"Profil",settings:"Pengaturan"};
+ $("headerTitle").textContent=titles[id]||"SIMETER";setNav(id);scrollTo(0,0);
+ if(id==="assets")loadMeters();if(id==="tasks")loadHistory();
 }
-
-function events() {
-  if ($("save")) $("save").onclick = saveApi;
-  if ($("test")) $("test").onclick = test;
-  if ($("scan")) $("scan").onclick = startScanner;
-  if ($("stop")) $("stop").onclick = stopScanner;
-  if ($("meter")) {
-    $("meter").addEventListener("input", () => {
-      clearTimeout(lookupTimer);
-      const nomor = $("meter").value.trim();
-      if (!nomor) { hideCustomer(); return; }
-      lookupTimer = setTimeout(() => lookupMeter(nomor), 400);
-    });
-    $("meter").addEventListener("change", () => lookupMeter($("meter").value.trim()));
-  }
-  if ($("getgps")) $("getgps").onclick = getGPS;
-  if ($("foto")) $("foto").onchange = previewPhoto;
-  if ($("form")) $("form").onsubmit = saveMaintenance;
-  if ($("refreshM")) $("refreshM").onclick = loadMeters;
-  if ($("refreshH")) $("refreshH").onclick = loadHistory;
-  if ($("searchM")) $("searchM").oninput = renderMeters;
-  if ($("searchH")) $("searchH").oninput = renderHistory;
-}
-
-function saveApi() {
-  api = $("api").value.trim();
-  if (!api) { if ($("apiMsg")) $("apiMsg").textContent = "URL Web App belum diisi."; return; }
-  localStorage.setItem("simeter_api_url", api);
-  if ($("apiMsg")) $("apiMsg").textContent = "URL Web App berhasil disimpan.";
-  test();
-}
-
-async function test() {
-  if (!api) { if ($("apiMsg")) $("apiMsg").textContent = "Isi URL Web App /exec terlebih dahulu."; return; }
-  try {
-    const response = await fetch(api + "?action=ping&t=" + Date.now(), {cache:"no-store"});
-    const data = await response.json();
-    if ($("apiMsg")) $("apiMsg").textContent = data.ok ? "✓ " + (data.message || "SIMETER API aktif") : "API tidak aktif.";
-  } catch (err) {
-    if ($("apiMsg")) $("apiMsg").textContent = "Gagal koneksi: " + err.message;
-  }
-}
-
-async function startScanner() {
-  if (!api) { if ($("scanMsg")) $("scanMsg").textContent = "Isi URL Web App terlebih dahulu."; return; }
-  if (typeof Html5Qrcode === "undefined") {
-    if ($("scanMsg")) $("scanMsg").textContent = "Modul scanner belum tersedia. Pastikan index.html memuat library html5-qrcode.";
-    return;
-  }
-  if ($("reader")) $("reader").classList.remove("hide");
-  if ($("scan")) $("scan").classList.add("hide");
-  if ($("stop")) $("stop").classList.remove("hide");
-  if ($("scanMsg")) $("scanMsg").textContent = "Arahkan kamera ke barcode / QR meter...";
-  try {
-    qr = new Html5Qrcode("reader");
-    await qr.start({facingMode:"environment"}, {fps:10, qrbox:{width:280,height:180}}, async decodedText => {
-      const nomor = extractMeterNumber(decodedText);
-      await stopScanner();
-      if ($("meter")) $("meter").value = nomor;
-      await lookupMeter(nomor);
-    });
-  } catch (err) {
-    if ($("scanMsg")) $("scanMsg").textContent = "Kamera gagal dibuka. Pastikan izin kamera diberikan.";
-    await stopScanner();
-  }
-}
-
-function extractMeterNumber(value) {
-  value = String(value || "").trim();
-  if (/^\d{6,20}$/.test(value)) return value;
-  const match = value.match(/\d{8,20}/);
-  return match ? match[0] : value;
-}
-
-async function stopScanner() {
-  if (qr) { try { await qr.stop(); } catch(e) {} try { await qr.clear(); } catch(e) {} qr = null; }
-  if ($("reader")) $("reader").classList.add("hide");
-  if ($("scan")) $("scan").classList.remove("hide");
-  if ($("stop")) $("stop").classList.add("hide");
-}
-
-async function lookupMeter(nomorMeter) {
-  nomorMeter = String(nomorMeter || "").trim();
-  if (!nomorMeter) { hideCustomer(); return; }
-  if (!api) { if ($("scanMsg")) $("scanMsg").textContent = "URL Web App belum disimpan."; return; }
-  if ($("scanMsg")) $("scanMsg").textContent = "Mencari data meter...";
-  try {
-    const response = await fetch(api + "?action=meter&nomorMeter=" + encodeURIComponent(nomorMeter) + "&t=" + Date.now(), {cache:"no-store"});
-    const data = await response.json();
-    if (data && data.ok && data.meter) {
-      if ($("id")) $("id").value = data.meter.idPelanggan || "";
-      if ($("meter")) $("meter").value = data.meter.nomorMeter || nomorMeter;
-      setField("name", data.meter.namaPelanggan || "");
-      setField("address", data.meter.alamat || "");
-      if ($("customer")) $("customer").classList.remove("hide");
-      if ($("scanMsg")) $("scanMsg").textContent = "✓ Data meter ditemukan otomatis.";
-      if ($("jenis")) $("jenis").focus();
-      return;
-    }
-    if ($("id")) $("id").value = "";
-    setField("name", ""); setField("address", "");
-    if ($("customer")) $("customer").classList.remove("hide");
-    if ($("scanMsg")) $("scanMsg").textContent = "⚠ Nomor meter belum ada di MASTER_METER.";
-  } catch (err) {
-    if ($("scanMsg")) $("scanMsg").textContent = "Gagal mengambil data master: " + err.message;
-  }
-}
-
-function setField(id, value) {
-  const el = $(id); if (!el) return;
-  if ("value" in el) el.value = value; else el.textContent = value || "-";
-}
-function getField(id) {
-  const el = $(id); if (!el) return "";
-  return "value" in el ? el.value : el.textContent;
-}
-function hideCustomer() {
-  if ($("id")) $("id").value = "";
-  setField("name", ""); setField("address", "");
-  if ($("customer")) $("customer").classList.add("hide");
-}
-
-function getGPS() {
-  if (!navigator.geolocation) { if ($("msg")) $("msg").textContent = "Perangkat tidak mendukung GPS."; return; }
-  if ($("gps")) $("gps").textContent = "Mengambil lokasi...";
-  navigator.geolocation.getCurrentPosition(position => {
-    gps = {lat:position.coords.latitude.toFixed(6), lng:position.coords.longitude.toFixed(6), accuracy:position.coords.accuracy.toFixed(1)};
-    if ($("gps")) $("gps").textContent = gps.lat + ", " + gps.lng + " (±" + gps.accuracy + " m)";
-  }, error => { if ($("gps")) $("gps").textContent = "GPS gagal: " + error.message; }, {enableHighAccuracy:true,timeout:15000,maximumAge:0});
-}
-
-function previewPhoto() {
-  const file = $("foto") && $("foto").files[0]; if (!file) return;
-  const reader = new FileReader();
-  reader.onload = e => { if ($("preview")) { $("preview").src=e.target.result; $("preview").classList.remove("hide"); } };
-  reader.readAsDataURL(file);
-}
-
-async function saveMaintenance(event) {
-  event.preventDefault();
-  if (!api) { if ($("msg")) $("msg").textContent = "URL Web App belum disimpan."; return; }
-  const file = $("foto") && $("foto").files[0];
-  const photo = file ? await imageToBase64(file) : "";
-  const data = {
-    action:"saveMaintenance", timestamp:new Date().toISOString(), tanggal:new Date().toLocaleDateString("id-ID"),
-    idPelanggan:$("id") ? $("id").value.trim() : "", nomorMeter:$("meter") ? $("meter").value.trim() : "",
-    namaPelanggan:getField("name"), alamat:getField("address"), jenis:$("jenis") ? $("jenis").value : "",
-    kondisi:$("kondisi") ? $("kondisi").value : "", kondisiSegel:$("kondisiSegel") ? $("kondisiSegel").value : "",
-    stand:$("stand") ? $("stand").value : "", hasilPemeriksaan:$("hasilPemeriksaan") ? $("hasilPemeriksaan").value : "",
-    petugas:$("petugas") ? $("petugas").value : "", keterangan:$("ket") ? $("ket").value : "",
-    latitude:gps.lat||"", longitude:gps.lng||"", accuracy:gps.accuracy||"", foto:photo
-  };
-  if (!data.nomorMeter) { if ($("msg")) $("msg").textContent = "⚠ Nomor meter belum diisi."; return; }
-  try {
-    if ($("msg")) $("msg").textContent = "Menyimpan data...";
-    const result = await post(data);
-    if (result.ok === false) throw new Error(result.error || "Gagal menyimpan");
-    if ($("msg")) $("msg").textContent = "✓ Data berhasil disimpan ke Google Sheets.";
-    data.pending=false; hist.unshift(data); localStorage.setItem("simeter_history",JSON.stringify(hist)); renderHistory();
-    if ($("form")) $("form").reset(); gps={}; if ($("gps")) $("gps").textContent="Belum diambil"; if ($("preview")) $("preview").classList.add("hide"); hideCustomer(); await loadHistory();
-  } catch(error) {
-    data.pending=true; hist.unshift(data); localStorage.setItem("simeter_history",JSON.stringify(hist)); renderHistory();
-    if ($("msg")) $("msg").textContent="⚠ Internet gagal. Data disimpan sementara secara offline.";
-  }
-}
-
-async function post(data) {
-  // Google Apps Script Web Apps can return a redirected response that some
-  // browsers block for cross-origin POSTs. The request itself is still sent.
-  await fetch(api, {
-    method: "POST",
-    mode: "no-cors",
-    headers: {"Content-Type": "text/plain;charset=utf-8"},
-    body: JSON.stringify(data)
-  });
-  return {ok:true};
-}
-
-async function loadMeters() {
-  if (!api) return;
-  try { const response=await fetch(api+"?action=getMeters&t="+Date.now(),{cache:"no-store"}); const data=await response.json(); meters=data.data||[]; localStorage.setItem("simeter_meters",JSON.stringify(meters)); renderMeters(); } catch(e){console.log(e);}
-}
-async function loadHistory() {
-  if (!api) return;
-  try { const response=await fetch(api+"?action=getHistory&t="+Date.now(),{cache:"no-store"}); const data=await response.json(); hist=data.data||[]; localStorage.setItem("simeter_history",JSON.stringify(hist)); renderHistory(); } catch(e){console.log(e);}
-}
-function loadLocal(){try{meters=JSON.parse(localStorage.getItem("simeter_meters")||"[]");hist=JSON.parse(localStorage.getItem("simeter_history")||"[]");}catch(e){meters=[];hist=[];}}
-function render(){renderMeters();renderHistory();}
-function renderMeters(){if(!$("meters"))return;const q=( $("searchM")?$("searchM").value:"" ).toLowerCase();$("meters").innerHTML=meters.filter(x=>JSON.stringify(x).toLowerCase().includes(q)).map(x=>`<div class="item"><b>${esc(x.idPelanggan)}</b><small>Meter: ${esc(x.nomorMeter)}<br>Nama: ${esc(x.namaPelanggan)}<br>Alamat: ${esc(x.alamat)}</small></div>`).join("")||"<p>Belum ada data.</p>";}
-function renderHistory(){if(!$("hist"))return;const q=( $("searchH")?$("searchH").value:"" ).toLowerCase();$("hist").innerHTML=hist.filter(x=>JSON.stringify(x).toLowerCase().includes(q)).map(x=>`<div class="item"><b>${esc(x.idPelanggan)} — ${esc(x.jenis||x.kondisi||"")}</b><small>Meter: ${esc(x.nomorMeter)}<br>${esc(x.timestamp||"")}<br>${x.pending?"⏳ Offline":"✓ Terkirim"}</small></div>`).join("")||"<p>Belum ada riwayat.</p>";}
-function esc(value){return String(value??"").replace(/[&<>"']/g,char=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"}[char]));}
-function imageToBase64(file){return new Promise((resolve,reject)=>{const reader=new FileReader();reader.onload=()=>{const image=new Image();image.onload=()=>{let width=image.width,height=image.height,max=1200;if(width>max){height=height*max/width;width=max;}const canvas=document.createElement("canvas");canvas.width=width;canvas.height=height;canvas.getContext("2d").drawImage(image,0,0,width,height);resolve(canvas.toDataURL("image/jpeg",0.75));};image.onerror=reject;image.src=reader.result;};reader.onerror=reject;reader.readAsDataURL(file);});}
+function setNav(id){document.querySelectorAll(".bottom button").forEach(b=>b.classList.toggle("active",b.dataset.screen===id||((id==="assetDetail"||id==="assets")&&b.dataset.screen==="assets")))}
+async function saveApi(){API=$("apiUrl").value.trim();localStorage.setItem("simeter_api_url",API);if(!API){$("apiMsg").textContent="URL belum diisi";return}try{let r=await fetch(API+"?action=ping&t="+Date.now()),d=await r.json();$("apiMsg").textContent=d.message||"SIMETER API aktif";sync()}catch(e){$("apiMsg").textContent="Koneksi gagal: "+e.message}}
+async function sync(){if(!API)return;await Promise.allSettled([loadMeters(),loadHistory()]);summary()}
+async function loadMeters(){if(!API)return;try{let r=await fetch(API+"?action=getMeters&t="+Date.now(),{cache:"no-store"}),d=await r.json();meters=d.data||[];localStorage.setItem("simeter_meters",JSON.stringify(meters));renderAssets();summary()}catch(e){$("assetList").innerHTML='<div class="item">Gagal memuat data meter.<br>'+esc(e.message)+'</div>'}}
+async function loadHistory(){if(!API)return;try{let r=await fetch(API+"?action=getHistory&t="+Date.now(),{cache:"no-store"}),d=await r.json();history=d.data||[];localStorage.setItem("simeter_history",JSON.stringify(history));renderTasks();summary()}catch(e){}}
+function loadLocal(){try{meters=JSON.parse(localStorage.getItem("simeter_meters")||"[]");history=JSON.parse(localStorage.getItem("simeter_history")||"[]")}catch(e){}renderAssets();renderTasks();summary()}
+function summary(){$("totalAssets").textContent=meters.length;$("badAssets").textContent=history.filter(x=>/rusak|tidak normal/i.test(x.kondisi||"")).length;$("openTasks").textContent=history.filter(x=>x.pending).length;$("dueAssets").textContent=0;$("recent").innerHTML=history.slice(0,3).map(x=>'<div class="item"><b>'+esc(x.nomorMeter||"-")+'</b><small>'+esc(x.namaPelanggan||"")+" · "+esc(x.tanggal||"")+'</small></div>').join("")||'<div class="item">Belum ada maintenance.</div>'}
+function renderAssets(){let q=($("assetSearch")?.value||"").toLowerCase(),a=meters.filter(x=>JSON.stringify(x).toLowerCase().includes(q));$("assetList").innerHTML=a.length?a.map(x=>'<div class="item"><b>'+esc(x.namaPelanggan||"Tanpa Nama")+'</b><small>'+esc(x.nomorMeter)+' · '+esc(x.idPelanggan)+'<br>'+esc(x.alamat)+'</small><br><button class="secondary" onclick="openAsset(\''+escAttr(x.nomorMeter)+'\')">Lihat Aset</button></div>').join(""):'<div class="item">Data meter kosong. Pastikan MASTER_METER terisi dan URL API benar.</div>'}
+function renderTasks(){$("taskList").innerHTML=history.length?history.map(x=>'<div class="item"><b>'+esc(x.nomorMeter||"-")+'</b><small>'+esc(x.namaPelanggan||"")+" · "+esc(x.tanggal||x.timestamp||"")+(x.pending?" · Offline":"")+'</small></div>').join(""):'<div class="item">Belum ada tugas.</div>'}
+function openAsset(n){let m=meters.find(x=>String(x.nomorMeter).trim()===String(n).trim());if(!m)return;go("assetDetail");$("detailName").textContent=m.namaPelanggan||"Aset";$("detailCrumb").textContent=m.nomorMeter;$("detailMeter").textContent=m.nomorMeter||"-";let h=history.filter(x=>String(x.nomorMeter).trim()===String(n).trim());$("detailHistory").innerHTML=h.length?h.map(x=>'<div class="item"><b>'+esc(x.petugas||"Teknisi")+' <span class="normal">● Normal</span></b><small>'+esc(x.keterangan||x.hasilPemeriksaan||"Maintenance")+'<br>'+esc(x.tanggal||x.timestamp||"")+'</small></div>').join(""):'<div class="item">Belum ada riwayat maintenance.</div>';let last=h[0]?.tanggal||"-";$("detailLast").textContent=last;let d=new Date();d.setDate(d.getDate()+30);$("detailNext").textContent=d.toISOString().slice(0,10)}
+async function lookup(n){n=String(n||"").trim();if(!n||!API){$("scanMsg").textContent="Isi URL API di Pengaturan.";return}try{let r=await fetch(API+"?action=meter&nomorMeter="+encodeURIComponent(n)+"&t="+Date.now()),d=await r.json();if(d.ok&&d.meter){let m=d.meter;$("fId").value=m.idPelanggan||"";$("fMeter").value=m.nomorMeter||n;$("customerName").textContent=m.namaPelanggan||"-";$("customerAddress").textContent=m.alamat||"-";$("maintenanceForm").classList.remove("hidden");$("scanMsg").textContent="✓ Data meter ditemukan"}else $("scanMsg").textContent="Meter tidak ditemukan di MASTER_METER"}catch(e){$("scanMsg").textContent="Gagal: "+e.message}}
+async function startScan(){if(!API){$("scanMsg").textContent="Isi URL API di Pengaturan.";return}if(typeof Html5Qrcode==="undefined"){ $("scanMsg").textContent="Scanner belum siap.";return}$("scanPlaceholder").classList.add("hidden");$("startScan").classList.add("hidden");$("stopScan").classList.remove("hidden");scanner=new Html5Qrcode("reader");try{await scanner.start({facingMode:"environment"},{fps:10,qrbox:{width:260,height:150}},async text=>{let n=(String(text).match(/\d{8,20}/)||[String(text)])[0];await stopScan();$("manualMeter").value=n;lookup(n)})}catch(e){$("scanMsg").textContent="Kamera gagal: "+e.message;stopScan()}}
+async function stopScan(){if(scanner){try{await scanner.stop()}catch(e){}try{await scanner.clear()}catch(e){}scanner=null}$("startScan").classList.remove("hidden");$("stopScan").classList.add("hidden")}
+function getGps(){if(!navigator.geolocation)return;$("gpsText").textContent="Mengambil GPS...";navigator.geolocation.getCurrentPosition(p=>{gps={lat:p.coords.latitude.toFixed(6),lng:p.coords.longitude.toFixed(6),accuracy:p.coords.accuracy.toFixed(1)};$("gpsText").textContent=gps.lat+", "+gps.lng+" (±"+gps.accuracy+"m)"},e=>$("gpsText").textContent="GPS gagal")}
+function previewPhoto(){let f=$("fFoto").files[0];if(!f)return;let r=new FileReader();r.onload=e=>{photo=e.target.result;$("preview").src=photo;$("preview").classList.remove("hidden")};r.readAsDataURL(f)}
+async function saveRecord(e){e.preventDefault();let d={action:"saveMaintenance",timestamp:new Date().toISOString(),tanggal:new Date().toLocaleDateString("id-ID"),idPelanggan:$("fId").value,nomorMeter:$("fMeter").value,namaPelanggan:$("customerName").textContent,alamat:$("customerAddress").textContent,jenis:$("fJenis").value,kondisi:$("fKondisi").value,kondisiSegel:$("fSegel").value,stand:$("fStand").value,hasilPemeriksaan:$("fHasil").value,keterangan:$("fKet").value,latitude:gps.lat||"",longitude:gps.lng||"",accuracy:gps.accuracy||"",foto:photo};try{let r=await fetch(API,{method:"POST",headers:{"Content-Type":"text/plain;charset=utf-8"},body:JSON.stringify(d)}),x=await r.json();if(x.ok===false)throw Error(x.error||"Gagal");$("saveMsg").textContent="✓ Maintenance berhasil disimpan";history.unshift(d);localStorage.setItem("simeter_history",JSON.stringify(history));summary();renderTasks()}catch(e){d.pending=true;history.unshift(d);localStorage.setItem("simeter_history",JSON.stringify(history));$("saveMsg").textContent="⚠ Internet gagal. Data disimpan sementara secara offline.";summary()}}
+function esc(v){return String(v??"").replace(/[&<>"']/g,c=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"}[c]))}function escAttr(v){return String(v??"").replace(/'/g,"&#39;")}
