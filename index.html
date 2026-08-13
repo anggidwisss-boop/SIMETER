@@ -1,0 +1,128 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+  <meta name="theme-color" content="#0b5ed7">
+  <meta name="description" content="SIMETER - Sistem Informasi Pemeliharaan Meter">
+  <link rel="manifest" href="manifest.json">
+  <link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'%3E%3Crect width='100' height='100' rx='20' fill='%230b5ed7'/%3E%3Ctext x='50' y='64' font-size='52' text-anchor='middle' fill='white' font-family='Arial'%3ES%3C/text%3E%3C/svg%3E">
+  <title>SIMETER</title>
+  <link rel="stylesheet" href="style.css">
+</head>
+<body>
+<header class="topbar">
+  <div>
+    <div class="brand">SIMETER</div>
+    <div class="subtitle">Sistem Informasi Pemeliharaan Meter</div>
+  </div>
+  <button id="installBtn" class="btn secondary hidden">Install</button>
+</header>
+
+<main class="container">
+  <section class="hero card">
+    <div>
+      <h1>Pemeliharaan Meter</h1>
+      <p>Input data, dokumentasi foto, lokasi GPS, dan riwayat pemeliharaan.</p>
+    </div>
+    <span id="onlineStatus" class="status">● Online</span>
+  </section>
+
+  <section class="grid stats">
+    <div class="stat card"><span>Data Meter</span><strong id="statMeters">0</strong></div>
+    <div class="stat card"><span>Pemeliharaan</span><strong id="statMaintenance">0</strong></div>
+    <div class="stat card"><span>Offline</span><strong id="statOffline">0</strong></div>
+  </section>
+
+  <nav class="tabs">
+    <button class="tab active" data-tab="input">Pemeliharaan</button>
+    <button class="tab" data-tab="meter">Data Meter</button>
+    <button class="tab" data-tab="history">Riwayat</button>
+    <button class="tab" data-tab="settings">Pengaturan</button>
+  </nav>
+
+  <section id="tab-input" class="tab-panel active">
+    <form id="maintenanceForm" class="card form">
+      <h2>Form Pemeliharaan</h2>
+      <label>ID Pelanggan
+        <input id="idPelanggan" name="idPelanggan" required placeholder="Contoh: 123456789012">
+      </label>
+      <label>Nomor Meter
+        <input id="nomorMeter" name="nomorMeter" placeholder="Nomor meter">
+      </label>
+      <label>Jenis Pemeliharaan
+        <select id="jenis" name="jenis" required>
+          <option value="">Pilih jenis</option>
+          <option>Pemeriksaan meter</option>
+          <option>Pembersihan meter</option>
+          <option>Pengecekan terminal</option>
+          <option>Pengecekan segel</option>
+          <option>Penggantian meter</option>
+          <option>Lainnya</option>
+        </select>
+      </label>
+      <label>Kondisi Meter
+        <select id="kondisi" name="kondisi" required>
+          <option value="">Pilih kondisi</option>
+          <option>Baik</option>
+          <option>Perlu perhatian</option>
+          <option>Rusak</option>
+        </select>
+      </label>
+      <label>Stand Meter (kWh)
+        <input id="stand" name="stand" type="number" min="0" step="0.01" placeholder="Contoh: 1250">
+      </label>
+      <label>Keterangan
+        <textarea id="keterangan" name="keterangan" rows="3" placeholder="Catatan hasil pemeriksaan"></textarea>
+      </label>
+
+      <div class="location-box">
+        <div><strong>Lokasi GPS</strong><span id="gpsText">Belum diambil</span></div>
+        <button type="button" id="gpsBtn" class="btn secondary">Ambil GPS</button>
+      </div>
+
+      <label>Foto Meter
+        <input id="foto" type="file" accept="image/*" capture="environment">
+      </label>
+      <img id="preview" class="preview hidden" alt="Pratinjau foto">
+
+      <button class="btn primary full" type="submit">Simpan Pemeliharaan</button>
+      <div id="formMessage" class="message"></div>
+    </form>
+  </section>
+
+  <section id="tab-meter" class="tab-panel">
+    <div class="card form">
+      <div class="section-head"><h2>Data Meter</h2><button id="refreshMeters" class="btn secondary">Refresh</button></div>
+      <input id="meterSearch" placeholder="Cari ID pelanggan / nomor meter">
+      <div id="meterList" class="list"></div>
+    </div>
+  </section>
+
+  <section id="tab-history" class="tab-panel">
+    <div class="card form">
+      <div class="section-head"><h2>Riwayat Pemeliharaan</h2><button id="refreshHistory" class="btn secondary">Refresh</button></div>
+      <input id="historySearch" placeholder="Cari ID pelanggan / tanggal / petugas">
+      <div id="historyList" class="list"></div>
+    </div>
+  </section>
+
+  <section id="tab-settings" class="tab-panel">
+    <div class="card form">
+      <h2>Pengaturan</h2>
+      <label>URL Web App Google Apps Script
+        <input id="apiUrl" placeholder="https://script.google.com/macros/s/.../exec">
+      </label>
+      <button id="saveSettings" class="btn primary full">Simpan URL</button>
+      <p class="hint">Masukkan URL Web App Apps Script yang sudah Anda deploy. URL disimpan hanya di perangkat ini.</p>
+      <button id="testApi" class="btn secondary full">Tes Koneksi</button>
+      <div id="apiMessage" class="message"></div>
+      <button id="clearLocal" class="btn danger full">Hapus Data Offline</button>
+    </div>
+  </section>
+</main>
+
+<div id="toast" class="toast"></div>
+<script src="app.js"></script>
+</body>
+</html>
