@@ -10,6 +10,7 @@ let lookupTimer = null;
 document.addEventListener("DOMContentLoaded", () => {
   if ($("api")) $("api").value = api;
   tabs(); events(); loadLocal(); render();
+  if (api) { loadMeters(); loadHistory(); }
   if (navigator.serviceWorker) navigator.serviceWorker.register("sw.js").catch(() => {});
   if (api) test();
 });
@@ -23,6 +24,8 @@ function tabs() {
       btn.classList.add("active");
       const panel = $(btn.dataset.t);
       if (panel) panel.classList.add("active");
+      if (btn.dataset.t === "meter") loadMeters();
+      if (btn.dataset.t === "history") loadHistory();
     };
   });
 }
