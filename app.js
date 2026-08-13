@@ -193,8 +193,15 @@ async function saveMaintenance(event) {
 }
 
 async function post(data) {
-  const response = await fetch(api,{method:"POST",headers:{"Content-Type":"text/plain;charset=utf-8"},body:JSON.stringify(data)});
-  return response.json();
+  // Google Apps Script Web Apps can return a redirected response that some
+  // browsers block for cross-origin POSTs. The request itself is still sent.
+  await fetch(api, {
+    method: "POST",
+    mode: "no-cors",
+    headers: {"Content-Type": "text/plain;charset=utf-8"},
+    body: JSON.stringify(data)
+  });
+  return {ok:true};
 }
 
 async function loadMeters() {
