@@ -4,12 +4,22 @@
 <meta name="theme-color" content="#1264d8"><link rel="manifest" href="manifest.json"><link rel="stylesheet" href="style.css">
 <title>SIMETER - Pemeliharaan Meter</title></head><body>
 <section id="loginPage" class="login-page">
- <div class="login-card">
-  <div class="pm-logo"><span>P</span>M</div><div class="login-title">SIMETER</div><div class="login-sub">Sistem Informasi Pemeliharaan Meter</div>
-  <label>Username</label><input id="loginUser" autocomplete="username" placeholder="Username">
-  <label>Kata sandi</label><div class="password-wrap"><input id="loginPass" type="password" autocomplete="current-password" placeholder="Kata sandi"><button id="togglePass">◉</button></div>
-  <button id="loginBtn" class="login-btn">Masuk</button><p id="loginStatus" class="login-status"></p>
-  <div class="login-api"><label>URL Web App Apps Script</label><input id="loginApi" placeholder="https://script.google.com/macros/s/.../exec"><button id="saveLoginApi">Simpan URL</button></div>
+ <div class="login-bg-orb orb1"></div><div class="login-bg-orb orb2"></div>
+ <div class="login-shell">
+  <div class="login-brand">
+   <div class="brand-mark"><span>SI</span><b>⚡</b></div>
+   <div><div class="brand-name">SIMETER</div><div class="brand-tag">Sistem Informasi Pemeliharaan Meter</div></div>
+  </div>
+  <div class="login-card">
+   <div class="login-card-head"><div class="pm-logo"><span>SI</span><b>⚡</b></div><div><h1>Selamat Datang</h1><p>Masuk untuk mengelola pemeliharaan meter.</p></div></div>
+   <div class="login-role-strip"><span>🔐 Akses Terproteksi</span><span>☁️ Terhubung Spreadsheet</span><span>📍 GPS & Foto</span></div>
+   <label>Username</label><div class="input-icon"><span>👤</span><input id="loginUser" autocomplete="username" placeholder="Masukkan username"></div>
+   <label>Kata sandi</label><div class="password-wrap input-icon"><span>🔒</span><input id="loginPass" type="password" autocomplete="current-password" placeholder="Masukkan kata sandi"><button id="togglePass" aria-label="Tampilkan kata sandi">◉</button></div>
+   <button id="loginBtn" class="login-btn"><span>Masuk ke SIMETER</span><b>→</b></button><p id="loginStatus" class="login-status"></p>
+   <div class="login-security"><span>●</span> Sistem pemeliharaan aset terintegrasi</div>
+   <details class="login-api"><summary>⚙ Pengaturan koneksi</summary><label>URL Web App Google Apps Script</label><input id="loginApi" placeholder="https://script.google.com/macros/s/.../exec"><button id="saveLoginApi">Simpan URL</button></details>
+  </div>
+  <div class="login-footer">SIMETER · Preventive & Corrective Maintenance<br><small>Gunakan akun sesuai hak akses Anda.</small></div>
  </div>
 </section>
 <div id="appShell" class="hidden">
@@ -36,7 +46,7 @@
  <label>Foto Meter</label><input id="foto" type="file" accept="image/*" capture="environment"><img id="fotoPreview" class="preview hidden">
  <button class="primary" type="submit">💾 Simpan Pemeliharaan</button><button class="gray" type="button" id="resetForm">Bersihkan</button><p id="saveStatus"></p></form></section>
 <section id="history" class="page"><div class="page-title"><h1>Riwayat Pemeliharaan</h1><button id="reloadHistory">↻</button></div><input id="historySearch" class="search" placeholder="Cari meter / pelanggan / petugas"><div id="historyList" class="list"></div></section>
-<section id="tasks" class="page"><div class="page-title"><h1>Penugasan</h1><button id="reloadTasks">↻</button></div><div id="taskCreate" class="card assign-only"><h3>Tambah Tugas</h3><label>Petugas Bawahan</label><select id="taskAssignee"></select><label>Nomor Meter</label><input id="taskMeter" placeholder="Nomor meter"><label>Judul Tugas</label><input id="taskTitle" placeholder="Contoh: Pemeriksaan meter jatuh tempo"><label>Deskripsi</label><textarea id="taskDesc" rows="3"></textarea><div class="grid2"><div><label>Prioritas</label><select id="taskPriority"><option>Normal</option><option>Tinggi</option><option>Urgent</option></select></div><div><label>Batas Waktu</label><input id="taskDue" type="date"></div></div><button id="saveTask" class="primary">📌 Tugaskan</button><p id="taskStatus"></p></div><div class="section"><h2>Daftar Tugas</h2></div><div id="taskList" class="list"></div></section>
+<section id="tasks" class="page"><div class="page-title"><h1>Penugasan</h1><button id="reloadTasks">↻</button></div><div id="taskCreate" class="card assign-only"><div class="assign-head"><div><h3>📋 Buat Penugasan</h3><small>Satu tugas dapat diberikan ke beberapa petugas sekaligus dan dapat dibuat berulang kali.</small></div><span class="assign-count">MULTI</span></div><label>Petugas Bawahan <small class="hint">Ctrl/klik untuk memilih lebih dari satu</small></label><select id="taskAssignee" multiple size="4"></select><div id="selectedAssignees" class="selected-assignees"></div><label>Nomor Meter</label><input id="taskMeter" placeholder="Nomor meter"><label>Judul Tugas</label><input id="taskTitle" placeholder="Contoh: Pemeriksaan meter jatuh tempo"><label>Deskripsi</label><textarea id="taskDesc" rows="3" placeholder="Instruksi pekerjaan"></textarea><div class="grid2"><div><label>Prioritas</label><select id="taskPriority"><option>Normal</option><option>Tinggi</option><option>Urgent</option></select></div><div><label>Batas Waktu</label><input id="taskDue" type="date"></div></div><div class="assign-actions"><button id="saveTask" class="primary">📌 Tugaskan</button><button id="resetTask" type="button" class="gray">↻ Penugasan Baru</button></div><p id="taskStatus"></p></div><div class="section"><h2>Daftar Tugas</h2><span id="taskTotal" class="task-total"></span></div><div id="taskList" class="list"></div></section>
 <section id="admin" class="page"><div class="page-title"><h1>Admin</h1></div><div class="card"><h3>Pengguna</h3><div class="grid2"><input id="newUsername" placeholder="Username"><input id="newName" placeholder="Nama"><input id="newPassword" type="password" placeholder="Password"><select id="newRole"><option>PETUGAS</option><option>SUPERVISOR</option><option>ADMIN</option><option>VIEWER</option></select><input id="newUnit" placeholder="ULP / Unit"></div><button id="saveUser" class="primary">Tambah Pengguna</button><p id="userStatus"></p><div id="userList" class="list"></div></div><div class="card"><h3>Pengaturan Interval & Notifikasi</h3><label>Interval default (hari)</label><input id="defaultInterval" type="number" min="1"><label>Notifikasi jatuh tempo H-</label><input id="notifyDays" type="number" min="0"><button id="saveSettings" class="primary">Simpan Pengaturan</button><p id="settingsStatus"></p></div></section>
 <section id="profile" class="page"><div class="page-title"><h1>Profil</h1></div><div class="card profile"><div class="avatar">👤</div><h2 id="profileName">-</h2><small id="profileRole">-</small><small id="profileUnit">-</small></div><div class="card"><h3>Notifikasi Perangkat</h3><p id="notifState">Belum diaktifkan</p><button id="notifProfileBtn" class="primary">Aktifkan Notifikasi</button></div></section>
 <section id="settings" class="page"><div class="page-title"><h1>Pengaturan</h1></div><div class="card"><label>URL Web App Google Apps Script</label><input id="apiUrl" placeholder="https://script.google.com/macros/s/.../exec"><button id="saveApi" class="primary">Simpan & Tes Koneksi</button><p id="apiStatus"></p></div><div class="card"><h3>Sinkronisasi</h3><button id="syncBtn" class="primary">↻ Sinkronkan Sekarang</button><p id="syncStatus"></p></div></section>
