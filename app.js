@@ -181,12 +181,44 @@ function fileToDataUrl(f) { return new Promise((res, rej) => { const r = new Fil
 async function loadTasks() { $("tasksView").innerHTML = `<div class="toolbar">${["SUPER_ADMIN","ADMIN","SUPERVISOR"].includes(USER?.role) ? `<button id="newTaskBtn" class="primary">+ Penugasan Baru</button>` : ""}<button id="refreshTasks" class="secondary">↻</button></div><div id="taskList">Memuat...</div>`; if ($("newTaskBtn")) $("newTaskBtn").onclick = newTask; $("refreshTasks").onclick = loadTasks; try { const params = ["SUPER_ADMIN","ADMIN","SUPERVISOR"].includes(USER?.role) ? {} : { username: USER?.username || "" }; const r = await request("getTasks", { params }); tasks = r.data || []; $("taskList").innerHTML = tasks.map(t => `<div class="card task" data-task="${esc(t.id)}"><div><b>${esc(t.nomorMeter || t.judul || "Tugas")}</b><div>${esc(t.judul || t.keterangan || "")}</div><div class="meta">${esc(t.petugas || t.assignee || "-")} · Jatuh tempo ${esc(t.jatuhTempo || t.dueDate || "-")}</div></div><span class="badge">${esc(t.status || "TERBUKA")}</span></div>`).join("") || '<div class="empty">Tidak ada tugas.</div>'; document.querySelectorAll("[data-task]").forEach(el => el.onclick = () => openTask(tasks.find(t => t.id === el.dataset.task))); } catch(e) { $("taskList").innerHTML = '<div class="alert danger">' + esc(e.message) + '</div>'; } }
 function openTask(t) { if (!t) return; showModal(`<h2>${esc(t.judul || "Tugas Pemeliharaan")}</h2><div class="details-grid"><div class="kv"><small>Nomor Meter</small><b>${esc(t.nomorMeter || "-")}</b></div><div class="kv"><small>Petugas</small><b>${esc(t.petugas || t.assignee || "-")}</b></div><div class="kv"><small>Jatuh Tempo</small><b>${esc(t.jatuhTempo || t.dueDate || "-")}</b></div><div class="kv"><small>Status</small><b>${esc(t.status || "TERBUKA")}</b></div></div><div class="card"><b>Keterangan</b><p>${esc(t.keterangan || "-")}</p></div><div class="actions"><button id="taskDo" class="primary">🔧 Kerjakan Pemeliharaan</button></div>`); $("taskDo").onclick = () => { closeModal(); openMaintenance(t.nomorMeter); }; }
 
-async function newTask() { try { const r = await request("getUsers"); const users = (r.data || []).filter(u => u.role === "PETUGAS" && u.active !== false); if (!users.length) return alert("Belum ada user dengan role PETUGAS."); showModal(`<h2>Penugasan Baru</h2><div class="form"><label>Nomor Meter<input id="tm"></label><label>Petugas<select id="tu">${users.map(u => `<option value="${esc(u.username)}">${esc(u.name)} (${esc(u.username)})</option>`).join("")}</select></label><label>Tanggal jatuh tempo<input id="td" type="date"></label><label>Judul<input id="tj" value="Pemeliharaan meter"></label><label>Keterangan<textarea id="tk"></textarea></label><button id="saveTaskBtn" class="primary">Simpan Penugasan</button></div>`); $("saveTaskBtn").onclick = saveTask; } catch(e) { alert(e.message); } }
-async function saveTask() { try { const r = await request("saveTask", { method: "POST", body: { nomorMeter: $("tm").value.trim(), judul: $("tj").value, tugas: $("tk").value, assignee: $("tu").value, dueDate: $("td").value, createdBy: USER?.username || "", status: "TERBUKA" } }); if (!r.ok) throw Error(r.error); closeModal(); loadTasks(); alert("Penugasan berhasil disimpan dan dapat muncul di akun petugas."); } catch(e) { alert(e.message); } }
+async function newTask() {
+  try {
+    const r = await request("getUsers");
+    const users = (r.data || []).filter(u => u.role === "PETUGAS" && u.active !== false);
+    if (!users.length) return alert("Belum ada user dengan role PETUGAS.");
+    showModal(`<h2>Penugasan Baru</h2><div class="form">
+      <label>Nomor Meter<input id="tm" placeholder="Contoh: 24126010982"></label>
+      <label>Petugas <small>(bisa pilih lebih dari 1)</small><select id="tu" multiple size="${Math.min(Math.max(users.length,2),6)}">${users.map(u => `<option value="${esc(u.username)}">${esc(u.name)} (${esc(u.username)})</option>`).join("")}</select></label>
+      <div class="msg">Tekan Ctrl (komputer) atau pilih beberapa nama di HP untuk penugasan lebih dari satu petugas.</div>
+      <label>Tanggal jatuh tempo<input id="td" type="date"></label>
+      <label>Judul<input id="tj" value="Pemeliharaan meter"></label>
+      <label>Keterangan<textarea id="tk"></textarea></label>
+      <button id="saveTaskBtn" class="primary">Simpan Penugasan</button>
+    </div>`);
+    $("saveTaskBtn").onclick = saveTask;
+  } catch(e) { alert(e.message); }
+}
+async function saveTask() {
+  try {
+    const select=$("tu");
+    const assignees=[...select.selectedOptions].map(o=>o.value);
+    if(!assignees.length)return alert("Pilih minimal 1 petugas.");
+    const nomor=$("tm").value.trim();
+    if(!nomor)return alert("Nomor meter wajib diisi.");
+    const r = await request("saveTask", { method: "POST", body: {
+      nomorMeter: nomor, judul: $("tj").value, tugas: $("tk").value, assignees,
+      dueDate: $("td").value, createdBy: USER?.username || "", status: "TERBUKA"
+    }});
+    if (!r.ok) throw Error(r.error);
+    closeModal();
+    await loadTasks();
+    alert(`Penugasan berhasil dibuat untuk ${r.count || assignees.length} petugas.`);
+  } catch(e) { alert(e.message); }
+}
 function renderAdminTasks() { $("adminContent").innerHTML = `<div class="card"><h2>Penugasan</h2><button id="adminNewTask" class="primary">+ Penugasan Baru</button><div id="adminTaskList">Memuat...</div></div>`; $("adminNewTask").onclick = newTask; loadAdminTasks(); }
 async function loadAdminTasks() { try { const r = await request("getTasks"); const a = r.data || []; $("adminTaskList").innerHTML = a.map(t => `<div class="meter-card"><b>${esc(t.nomorMeter || "-")}</b><div>${esc(t.petugas || t.assignee || "-")} · ${esc(t.judul || "")}</div><small>${esc(t.status || "TERBUKA")} · ${esc(t.jatuhTempo || "-")}</small></div>`).join("") || '<div class="empty">Belum ada penugasan.</div>'; } catch(e) { $("adminTaskList").innerHTML = '<div class="alert danger">' + esc(e.message) + '</div>'; } }
 function showNotifications() { const a = meters.filter(m => m.jatuhTempo && daysUntil(m.jatuhTempo) <= 7); showModal(`<h2>Notifikasi</h2>${a.map(m => `<div class="alert ${daysUntil(m.jatuhTempo) < 0 ? "danger" : ""}">⚠ <b>${esc(m.nomorMeter)}</b> — ${daysUntil(m.jatuhTempo) < 0 ? "terlambat" : "jatuh tempo " + esc(m.jatuhTempo)}</div>`).join("") || '<div class="empty">Tidak ada jatuh tempo ≤ 7 hari.</div>'}`); }
-function showModal(html) { const modal = $("modal"), body = $("modalBody"); if (!modal || !body) return; body.innerHTML = html || '<div class="empty">Tidak ada informasi.</div>'; modal.hidden = false; modal.setAttribute("aria-hidden", "false"); modal.style.setProperty("display", "grid", "important"); body.scrollTop = 0; requestAnimationFrame(() => { const first = body.querySelector("input,select,textarea,button"); if (first) first.focus({ preventScroll: true }); }); }
+function showModal(html) { const modal = $("modal"), body = $("modalBody"); if (!modal || !body || !USER || $("loginView")?.hidden === false) return; body.innerHTML = html || '<div class="empty">Tidak ada informasi.</div>'; modal.hidden = false; modal.setAttribute("aria-hidden", "false"); modal.style.setProperty("display", "grid", "important"); body.scrollTop = 0; requestAnimationFrame(() => { const first = body.querySelector("input,select,textarea,button"); if (first) first.focus({ preventScroll: true }); }); }
 function closeModal() { const modal = $("modal"); if (!modal) return; modal.hidden = true; modal.setAttribute("aria-hidden", "true"); modal.style.setProperty("display", "none", "important"); $("modalBody").innerHTML = ""; }
 function daysUntil(d) { const a = new Date(); a.setHours(0,0,0,0); const b = new Date(d); b.setHours(0,0,0,0); return Math.ceil((b-a)/86400000); }
 function esc(v) { return String(v ?? "").replace(/[&<>"']/g, c => ({"&":"&amp;","<":"&lt;",">":"&gt;","\"":"&quot;","'":"&#39;"}[c])); }
