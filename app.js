@@ -311,3 +311,158 @@ document.addEventListener("click", e => {
   const card = e.target.closest(".meter-card[data-meter]");
   if (card && !e.target.closest("button")) { const m = meters.find(x => String(x.nomorMeter) === String(card.dataset.meter)); if (m) openMeter(m); }
 });
+
+/* =========================================================
+   SIMETER V6 FRONTEND — BERITA ACARA / TTD / PDF
+   ========================================================= */
+
+function signatureCanvasHtml(id) {
+  return `
+    <div class="signature-wrap">
+      <canvas id="${id}" class="signature-canvas" width="520" height="180"></canvas>
+      <div class="signature-actions">
+        <button type="button" class="secondary" onclick="clearSignature('${id}')">Hapus TTD</button>
+      </div>
+    </div>`;
+}
+
+const signaturePads = {};
+
+function initSignature(id) {
+  const c = document.getElementById(id);
+  if (!c) return;
+  const ctx = c.getContext("2d");
+  ctx.lineWidth = 2.2;
+  ctx.lineCap = "round";
+  ctx.strokeStyle = "#1f2937";
+  let drawing = false;
+
+  const pos = e => {
+    const r = c.getBoundingClientRect();
+    const p = e.touches ? e.touches[0] : e;
+    return {x:(p.clientX-r.left)*c.width/r.width, y:(p.clientY-r.top)*c.height/r.height};
+  };
+  const start = e => { e.preventDefault(); drawing=true; const p=pos(e); ctx.beginPath(); ctx.moveTo(p.x,p.y); };
+  const move = e => { if(!drawing)return; e.preventDefault(); const p=pos(e); ctx.lineTo(p.x,p.y); ctx.stroke(); };
+  const end = e => { drawing=false; };
+  c.addEventListener("mousedown",start); c.addEventListener("mousemove",move); window.addEventListener("mouseup",end);
+  c.addEventListener("touchstart",start,{passive:false}); c.addEventListener("touchmove",move,{passive:false}); c.addEventListener("touchend",end);
+  signaturePads[id] = c;
+}
+function clearSignature(id) {
+  const c = signaturePads[id] || document.getElementById(id);
+  if (c) c.getContext("2d").clearRect(0,0,c.width,c.height);
+}
+function signatureData(id) {
+  const c = signaturePads[id] || document.getElementById(id);
+  if (!c) return "";
+  const blank = document.createElement("canvas");
+  blank.width=c.width; blank.height=c.height;
+  if (c.toDataURL() === blank.toDataURL()) return "";
+  return c.toDataURL("image/png");
+}
+
+async function openBeritaAcara(task) {
+  const m = meters.find(x => String(x.nomorMeter) === String(task.nomorMeter)) || {};
+  let users = [];
+  try { users = (await request("getUsers")).data || []; } catch(_) {}
+  const supervisors = users.filter(u => ["SUPERVISOR","ADMIN","SUPER_ADMIN"].includes(u.role) && u.active !== false);
+
+  showModal(`
+    <h2>📝 Berita Acara Pemeliharaan</h2>
+    <div class="badge">ID Tugas: ${esc(task.id)}</div>
+    <div class="form">
+      <div class="row">
+        <label>Nomor BA<input id="baNomor" value=""></label>
+        <label>Tanggal<input id="baTanggal" type="date" value="${new Date().toISOString().slice(0,10)}"></label>
+      </div>
+      <div class="row">
+        <label>ID Pelanggan<input id="baId" value="${esc(m.idPelanggan||"")}" readonly></label>
+        <label>Nomor Meter<input id="baMeter" value="${esc(task.nomorMeter||"")}" readonly></label>
+      </div>
+      <label>Nama Pelanggan<input id="baNama" value="${esc(m.namaPelanggan||"")}" readonly></label>
+      <label>Alamat<textarea id="baAlamat">${esc(m.alamat||"")}</textarea></label>
+      <label>Jenis Pemeliharaan<select id="baJenis"><option>Pemeliharaan Rutin</option><option>Pemeriksaan</option><option>Perbaikan</option><option>Penggantian</option></select></label>
+      <label>Status Pelanggan<select id="baStatus"><option>Aktif</option><option>Non Aktif</option><option>Normal</option><option>Overdue</option></select></label>
+      <label>Kondisi KWH Meter<select id="baKwh"><option>Normal</option><option>Baik</option><option>Perlu Perbaikan</option><option>Rusak</option></select></label>
+      <label>Kondisi Kubikel/PMCB<select id="baKubikel"><option>Normal</option><option>Baik</option><option>Perlu Perbaikan</option><option>Rusak</option></select></label>
+
+      <h3>CT</h3>
+      <div class="row"><label>CT R<input id="baCTR"></label><label>CT S<input id="baCTS"></label></div>
+      <label>CT T<input id="baCTT"></label>
+      <h3>PT</h3>
+      <div class="row"><label>PT R<input id="baPTR"></label><label>PT S<input id="baPTS"></label></div>
+      <label>PT T<input id="baPTT"></label>
+
+      <h3>Hasil Pengukuran</h3>
+      <div class="row"><label>Tegangan R<input id="baVR" type="number" step="0.01"></label><label>Tegangan S<input id="baVS" type="number" step="0.01"></label></div>
+      <label>Tegangan T<input id="baVT" type="number" step="0.01"></label>
+      <div class="row"><label>Arus R<input id="baIR" type="number" step="0.01"></label><label>Arus S<input id="baIS" type="number" step="0.01"></label></div>
+      <label>Arus T<input id="baIT" type="number" step="0.01"></label>
+
+      <h3>Stand Meter</h3>
+      <div class="row"><label>LWBP<input id="baLWBP" type="number" step="0.01"></label><label>WBP<input id="baWBP" type="number" step="0.01"></label></div>
+      <div class="row"><label>KVARH<input id="baKVARH" type="number" step="0.01"></label><label>KWH TOTAL<input id="baKWH" type="number" step="0.01"></label></div>
+
+      <label>Kesimpulan<select id="baKesimpulan"><option>Normal / Baik</option><option>Perlu Pemeliharaan</option><option>Perlu Perbaikan</option><option>Perlu Penggantian</option><option>Tidak Dapat Dilakukan</option></select></label>
+      <label>Keterangan<textarea id="baKet"></textarea></label>
+      <label>Supervisor<select id="baSupervisor"><option value="">Pilih supervisor</option>${supervisors.map(u=>`<option value="${esc(u.username)}">${esc(u.name)} (${esc(u.username)})</option>`).join("")}</select></label>
+
+      <div class="card signature-card">
+        <h3>✍️ Tanda Tangan Petugas</h3>
+        <p class="muted">Tanda tangan langsung di layar HP.</p>
+        ${signatureCanvasHtml("ttdPetugasCanvas")}
+      </div>
+
+      <button class="primary big" onclick="saveBeritaAcaraFromForm('${esc(task.id)}')">💾 Simpan & Ajukan</button>
+    </div>
+  `);
+  setTimeout(()=>initSignature("ttdPetugasCanvas"),100);
+}
+
+async function saveBeritaAcaraFromForm(idTugas) {
+  const signature = signatureData("ttdPetugasCanvas");
+  if (!signature) return alert("Tanda tangan petugas wajib diisi.");
+
+  try {
+    const r = await request("saveBeritaAcara", {method:"POST", body:{
+      idTugas:idTugas,
+      idPelanggan:$("baId").value,
+      nomorMeter:$("baMeter").value,
+      namaPelanggan:$("baNama").value,
+      alamat:$("baAlamat").value,
+      tanggal:$("baTanggal").value,
+      nomorBA:$("baNomor").value,
+      unit:USER?.unit||"",
+      petugasUsername:USER?.username||"",
+      petugas:USER?.name||USER?.username||"",
+      supervisorUsername:$("baSupervisor").value,
+      supervisor:$("baSupervisor").selectedOptions[0]?.textContent||"",
+      jenisPemeliharaan:$("baJenis").value,
+      statusPelanggan:$("baStatus").value,
+      kondisiKwhMeter:$("baKwh").value,
+      kondisiKubikel:$("baKubikel").value,
+      kondisiCTR:$("baCTR").value,kondisiCTS:$("baCTS").value,kondisiCTT:$("baCTT").value,
+      kondisiPTR:$("baPTR").value,kondisiPTS:$("baPTS").value,kondisiPTT:$("baPTT").value,
+      teganganR:$("baVR").value,teganganS:$("baVS").value,teganganT:$("baVT").value,
+      arusR:$("baIR").value,arusS:$("baIS").value,arusT:$("baIT").value,
+      lwbp:$("baLWBP").value,wbp:$("baWBP").value,kvarh:$("baKVARH").value,kwhTotal:$("baKWH").value,
+      kesimpulan:$("baKesimpulan").value,keterangan:$("baKet").value,
+      ttdPetugas:signature,waktuTtdPetugas:new Date().toISOString(),statusBA:"DIAJUKAN"
+    }});
+    if (!r.ok) throw Error(r.error);
+    await request("signBeritaAcara",{method:"POST",body:{idBA:r.idBA,role:"PETUGAS",signature:signature,time:new Date().toISOString()}});
+    const pdf = await request("createBAPdf",{method:"POST",body:{idBA:r.idBA}});
+    if (!pdf.ok) throw Error(pdf.error);
+    await request("updateTaskStatus",{method:"POST",body:{id:idTugas,status:"SELESAI"}});
+    closeModal();
+    alert("Berita Acara tersimpan, PDF dibuat, dan tugas diselesaikan.");
+    navigate("tasks");
+  } catch(e) {
+    alert("Gagal menyimpan Berita Acara: " + e.message);
+  }
+}
+
+async function completeTaskWithBA(task) {
+  await openBeritaAcara(task);
+}
