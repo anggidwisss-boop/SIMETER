@@ -1,1 +1,1 @@
-Trigger frontend patch workflow.
+Trigger corrected frontend patch workflow.
