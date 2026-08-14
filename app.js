@@ -1,5 +1,5 @@
 const $ = id => document.getElementById(id);
-const APP_VERSION = "7.1.0";
+const APP_VERSION = "8.0.0";
 let API = localStorage.getItem("simeter_api_url") || "";
 let USER = null, meters = [], tasks = [], history = [], currentPage = "dashboard", scanner = null;
 
@@ -31,7 +31,8 @@ window.addEventListener("DOMContentLoaded", () => {
     const saved = localStorage.getItem("simeter_user");
     if (saved) {
       const u = JSON.parse(saved);
-      if (u && u.username && u.role) {
+      if (u && u.username) {
+        u.role = u.role || "PETUGAS";
         USER = u;
         showMain();
         // Refresh tidak boleh menghapus sesi lokal. Cek backend hanya untuk status koneksi.
@@ -84,12 +85,16 @@ async function request(action, opts = {}) {
   const timer = setTimeout(() => controller.abort(), opts.timeout || 20000);
   try {
     if (method === "GET") {
-      const qs = new URLSearchParams(opts.params || {}); qs.set("action", action); qs.set("v", APP_VERSION);
+      const qs = new URLSearchParams(opts.params || {});
+      qs.set("action", action);
+      qs.set("v", APP_VERSION);
+      if (USER?.username && !qs.has("username")) qs.set("username", USER.username);
+      if (USER?.role && !qs.has("role")) qs.set("role", USER.role);
       const r = await fetch(API + "?" + qs.toString(), {cache:"no-store",redirect:"follow",signal:controller.signal});
       const t = await r.text();
       try { return JSON.parse(t); } catch (_) { throw new Error("Respons API bukan JSON. Pastikan Web App Apps Script menggunakan URL /exec."); }
     }
-    const r = await fetch(API, {method:"POST",redirect:"follow",headers:{"Content-Type":"text/plain;charset=utf-8"},body:JSON.stringify({action,...(opts.body||{}),_v:APP_VERSION}),cache:"no-store",signal:controller.signal});
+    const r = await fetch(API, {method:"POST",redirect:"follow",headers:{"Content-Type":"text/plain;charset=utf-8"},body:JSON.stringify({action,username:USER?.username||"",role:USER?.role||"",...(opts.body||{}),_v:APP_VERSION}),cache:"no-store",signal:controller.signal});
     const t = await r.text();
     try { return JSON.parse(t); } catch (_) { throw new Error("Respons API bukan JSON. Pastikan Web App Apps Script menggunakan URL /exec."); }
   } finally { clearTimeout(timer); }
@@ -201,37 +206,31 @@ async function renderDashboard() {
   const recent = $("recent");
   try {
     if (!API) throw Error("URL Web App belum diisi. Buka Pengaturan → Koneksi.");
-    // Dashboard dibuat kompatibel dengan deployment lama maupun V7.
-    // Jangan menggagalkan seluruh dashboard hanya karena endpoint getDashboard belum tersedia.
-    let summary = null;
-    try {
-      const d = await request("getDashboard", {params:{username:USER?.username||""},timeout:15000});
-      if (d && d.ok) summary = d.data || {};
-    } catch (_) {}
-
+    // V8: dashboard tidak memakai endpoint getDashboard yang sering berbeda versi.
+    // Data dihitung dari endpoint dasar yang sederhana dan stabil.
     const [m,h,t] = await Promise.all([
-      request("getMeters", {timeout:15000}),
-      request("getHistory", {timeout:15000}),
-      request("getTasks", {params:{username:USER?.username||""},timeout:15000})
+      request("getMeters", {params:{username:USER?.username||""},timeout:20000}),
+      request("getHistory", {params:{username:USER?.username||""},timeout:20000}),
+      request("getTasks", {params:{username:USER?.username||""},timeout:20000})
     ]);
-    if (!m || !m.ok) throw Error(m?.error || "Gagal mengambil data meter. Periksa deployment Apps Script.");
-    if (!h || !h.ok) throw Error(h?.error || "Gagal mengambil riwayat. Periksa deployment Apps Script.");
-    if (!t || !t.ok) throw Error(t?.error || "Gagal mengambil tugas. Periksa deployment Apps Script.");
-
-    meters = m.data || []; history = h.data || h.rows || []; tasks = t.data || [];
-    $("sMeters").textContent = summary?.totalMeter ?? meters.length;
+    if (!m || !m.ok) throw Error(m?.error || "Gagal mengambil data meter.");
+    if (!h || !h.ok) throw Error(h?.error || "Gagal mengambil riwayat pemeliharaan.");
+    if (!t || !t.ok) throw Error(t?.error || "Gagal mengambil penugasan.");
+    meters = Array.isArray(m.data) ? m.data : [];
+    history = Array.isArray(h.data) ? h.data : (Array.isArray(h.rows) ? h.rows : []);
+    tasks = Array.isArray(t.data) ? t.data : [];
+    $("sMeters").textContent = meters.length;
     $("sHist").textContent = history.length;
-    $("sTasks").textContent = summary?.tugasTerbuka ?? tasks.filter(x => x.status !== "SELESAI").length;
-    const due = meters.filter(m => m.jatuhTempo && daysUntil(m.jatuhTempo) <= 7);
+    $("sTasks").textContent = tasks.filter(x => !["SELESAI","BATAL"].includes(String(x.status||"").toUpperCase())).length;
+    const due = meters.filter(x => x.jatuhTempo && daysUntil(x.jatuhTempo) <= 7);
     $("sDue").textContent = due.length;
-    $("dashAlerts").innerHTML = due.slice(0,5).map(m => `<div class="alert ${daysUntil(m.jatuhTempo) < 0 ? "danger" : ""}">⚠ <b>${esc(m.nomorMeter)}</b> — ${daysUntil(m.jatuhTempo) < 0 ? "terlambat" : "jatuh tempo " + esc(m.jatuhTempo)}</div>`).join("");
-    recent.innerHTML = history.slice(0,5).map(x => `<div class="meter-card"><b>${esc(x.nomorMeter)}</b><div>${esc(x.jenis || x.kondisi || "Pemeliharaan")} · ${esc(x.tanggal || x.timestamp || "")}</div></div>`).join("") || '<div class="empty">Belum ada riwayat.</div>';
+    $("dashAlerts").innerHTML = due.slice(0,8).map(x => `<div class="alert ${daysUntil(x.jatuhTempo)<0?"danger":""}">⚠ <b>${esc(x.nomorMeter||"")}</b> — ${daysUntil(x.jatuhTempo)<0 ? "terlambat " + Math.abs(daysUntil(x.jatuhTempo)) + " hari" : "jatuh tempo " + esc(x.jatuhTempo)}</div>`).join("");
+    recent.innerHTML = history.slice(0,5).map(x => `<div class="meter-card"><b>${esc(x.nomorMeter || x[3] || "-")}</b><div>${esc(x.jenis || x.kondisi || x[9] || "Pemeliharaan")} · ${esc(x.tanggal || x.timestamp || x[1] || "")}</div></div>`).join("") || '<div class="empty">Belum ada riwayat.</div>';
   } catch(e) {
     $("sMeters").textContent = "—"; $("sHist").textContent = "—"; $("sDue").textContent = "—"; $("sTasks").textContent = "—";
     recent.innerHTML = `<div class="alert danger"><b>Data belum dapat dimuat.</b><br>${esc(e.message || "Koneksi API gagal")}</div><button class="secondary" onclick="navigate('settings')">⚙ Periksa Koneksi</button>`;
   }
 }
-
 async function loadMeters() {
   $("metersView").innerHTML = `<div class="toolbar"><input class="search" id="meterFilter" placeholder="Filter nomor meter / pelanggan"><button class="secondary" id="refreshMeters">↻</button></div><div id="meterList">Memuat...</div>`;
   $("refreshMeters").onclick = loadMeters;

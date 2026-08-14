@@ -22,7 +22,8 @@ function doGet(e) {
   const p = (e && e.parameter) || {};
   const a = String(p.action || "ping");
   try {
-    if (a === "ping") return json({ok:true,app:"SIMETER",version:"7.0.0",message:"SIMETER API aktif",time:new Date().toISOString()});
+    if (a === "ping") return json({ok:true,app:"SIMETER",version:"8.0.0",message:"SIMETER API aktif",time:new Date().toISOString()});
+    if (a === "whoami") return json(whoAmI_(p.username || ""));
     if (a === "getMeters") return json(getMeters());
     if (a === "getHistory" || a === "history") return json(getHistory());
     if (a === "getUsers") return json(getUsers());
@@ -94,7 +95,7 @@ function setupSheets() {
   ensure(SHEETS.PETUGAS, HEADERS.PETUGAS);
   seedAdmin(false);
   ensureBASheet_();
-  return {ok:true,message:"Database SIMETER siap digunakan",version:"7.0.0"};
+  return {ok:true,message:"Database SIMETER siap digunakan",version:"8.0.0"};
 }
 
 function seedAdmin(force) {
@@ -130,6 +131,22 @@ function sha256(s) {
   return d.map(function(b) {
     return (b < 0 ? b + 256 : b).toString(16).padStart(2,"0");
   }).join("");
+}
+
+function whoAmI_(username) {
+  const u = String(username || "").trim().toLowerCase();
+  if (!u) return {ok:false,error:"Username belum dikirim"};
+  const sh = ss().getSheetByName(SHEETS.USERS);
+  if (!sh || sh.getLastRow() < 2) return {ok:false,error:"USERS belum tersedia"};
+  const rows = sh.getDataRange().getDisplayValues();
+  for (let i=1;i<rows.length;i++) {
+    if (String(rows[i][0]||"").trim().toLowerCase() === u) {
+      const active = String(rows[i][5] === undefined ? true : rows[i][5]).trim().toLowerCase();
+      if (["false","tidak","nonaktif"].includes(active)) return {ok:false,error:"Akun tidak aktif"};
+      return {ok:true,user:{username:rows[i][0],name:rows[i][2]||rows[i][0],role:rows[i][3]||"PETUGAS",unit:rows[i][4]||"",active:true}};
+    }
+  }
+  return {ok:false,error:"User tidak ditemukan"};
 }
 
 function login(username, password) {
