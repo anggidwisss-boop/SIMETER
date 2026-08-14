@@ -1,0 +1,1 @@
+Branding updated to RIMPU using the user-provided logo concept and Rapid Inspection & Monitoring identity.
