@@ -1,5 +1,5 @@
 const $ = id => document.getElementById(id);
-const APP_VERSION = "4.0.0";
+const APP_VERSION = "5.0.0";
 let API = localStorage.getItem("simeter_api_url") || "";
 let USER = null, meters = [], tasks = [], history = [], currentPage = "dashboard", scanner = null;
 
@@ -74,7 +74,7 @@ async function loginRequest(username,password) {
     try { return JSON.parse(t); } catch (_) { throw new Error("Backend belum menggunakan Code.gs V4. Deploy versi baru Apps Script."); }
   } finally { clearTimeout(timer); }
 }
-async function testPing(){ try { const x=await request("ping"); return !!x.ok && x.app==="SIMETER" && x.version==="4.0.0"; } catch(_){ return false; }}
+async function testPing(){ try { const x=await request("ping"); return !!x.ok && x.app==="SIMETER" && x.version==="5.0.0"; } catch(_){ return false; }}
 function setLoginMsg(x) { $("loginMsg").textContent = x; }
 
 async function login() {
@@ -160,15 +160,30 @@ function userForm() {
 }
 async function createUser() { try { const r = await request("saveUser", { method: "POST", body: { username: $("nu").value, name: $("nn").value, password: $("np").value, role: $("nr").value, unit: $("nunit").value, active: true } }); if (!r.ok) throw Error(r.error); closeModal(); loadUsers(); } catch (e) { alert(e.message); } }
 
-function renderDashboard() {
+async function renderDashboard() {
   $("dashboard").innerHTML = `<div class="grid"><div class="stat"><small>Total Meter</small><b id="sMeters">…</b></div><div class="stat"><small>Pemeliharaan</small><b id="sHist">…</b></div><div class="stat"><small>Jatuh Tempo</small><b id="sDue">…</b></div><div class="stat"><small>Tugas Terbuka</small><b id="sTasks">…</b></div></div><div id="dashAlerts" style="margin-top:14px"></div><div class="card"><h2>Aktivitas Terbaru</h2><div id="recent">Memuat...</div></div>`;
-  Promise.all([request("getMeters"), request("getHistory"), request("getTasks", { params: { username: USER?.username || "" } })]).then(([m,h,t]) => {
+  const recent = $("recent");
+  try {
+    const [m,h,t] = await Promise.all([
+      request("getMeters", {timeout:15000}),
+      request("getHistory", {timeout:15000}),
+      request("getTasks", {params:{username:USER?.username||""},timeout:15000})
+    ]);
+    if (!m.ok) throw Error(m.error || "Gagal mengambil data meter");
+    if (!h.ok) throw Error(h.error || "Gagal mengambil riwayat");
+    if (!t.ok) throw Error(t.error || "Gagal mengambil tugas");
     meters = m.data || []; history = h.data || h.rows || []; tasks = t.data || [];
-    $("sMeters").textContent = meters.length; $("sHist").textContent = history.length; $("sTasks").textContent = tasks.filter(x => x.status !== "SELESAI").length;
-    const due = meters.filter(m => m.jatuhTempo && daysUntil(m.jatuhTempo) <= 7).length; $("sDue").textContent = due;
+    $("sMeters").textContent = meters.length;
+    $("sHist").textContent = history.length;
+    $("sTasks").textContent = tasks.filter(x => x.status !== "SELESAI").length;
+    const due = meters.filter(m => m.jatuhTempo && daysUntil(m.jatuhTempo) <= 7).length;
+    $("sDue").textContent = due;
     $("dashAlerts").innerHTML = meters.filter(m => m.jatuhTempo && daysUntil(m.jatuhTempo) <= 7).slice(0,5).map(m => `<div class="alert ${daysUntil(m.jatuhTempo) < 0 ? "danger" : ""}">⚠ <b>${esc(m.nomorMeter)}</b> — ${daysUntil(m.jatuhTempo) < 0 ? "terlambat" : "jatuh tempo " + esc(m.jatuhTempo)}</div>`).join("");
-    $("recent").innerHTML = history.slice(0,5).map(x => `<div class="meter-card"><b>${esc(x.nomorMeter)}</b><div>${esc(x.jenis || x.kondisi || "Pemeliharaan")} · ${esc(x.tanggal || x.timestamp || "")}</div></div>`).join("") || '<div class="empty">Belum ada riwayat.</div>';
-  }).catch(e => $("recent").innerHTML = '<div class="alert danger">' + esc(e.message) + '</div>');
+    recent.innerHTML = history.slice(0,5).map(x => `<div class="meter-card"><b>${esc(x.nomorMeter)}</b><div>${esc(x.jenis || x.kondisi || "Pemeliharaan")} · ${esc(x.tanggal || x.timestamp || "")}</div></div>`).join("") || '<div class="empty">Belum ada riwayat.</div>';
+  } catch(e) {
+    $("sMeters").textContent = "0"; $("sHist").textContent = "0"; $("sDue").textContent = "0"; $("sTasks").textContent = "0";
+    recent.innerHTML = `<div class="alert danger"><b>Data belum dapat dimuat.</b><br>${esc(e.message || "Koneksi API gagal")}</div><button class="secondary" onclick="navigate('settings')">⚙ Periksa Koneksi</button>`;
+  }
 }
 
 async function loadMeters() {
