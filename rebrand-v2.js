@@ -1,0 +1,1 @@
+document.addEventListener('DOMContentLoaded',()=>{document.querySelectorAll('img[src*="logo-rimpu.svg"]').forEach(img=>img.src='rimpu-logo.svg');document.querySelectorAll('.visual-image').forEach(el=>el.style.backgroundImage="url('rimpu-logo.svg')");document.title='RIMPU - Rapid Inspection & Monitoring';});
