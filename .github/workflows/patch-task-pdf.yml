@@ -22,15 +22,14 @@ jobs:
         shell: python
         run: |
           from pathlib import Path
-          import re
 
           p = Path('app.js')
           s = p.read_text(encoding='utf-8')
 
           start = s.find('async function loadTasks()')
-          end = s.find('async function newTask()', start)
+          end = s.find('function openTask(t)', start)
           if start < 0 or end < 0:
-              raise SystemExit('loadTasks/newTask boundary not found')
+              raise SystemExit('loadTasks/openTask boundary not found')
 
           new_load = r'''async function loadTasks() {
             $("tasksView").innerHTML = `<div class="toolbar">${["SUPER_ADMIN","ADMIN","SUPERVISOR"].includes(USER?.role) ? `<button id="newTaskBtn" class="primary">+ Penugasan Baru</button>` : ""}<button id="refreshTasks" class="secondary">↻</button></div><div id="taskList">Memuat...</div>`;
@@ -120,7 +119,7 @@ jobs:
                 const ba = r?.data;
                 if (ba) {
                   area.innerHTML = `<div class="card"><b>📄 Berita Acara tersedia</b><div class="meta">Nomor BA: ${esc(ba.nomorBA || ba.idBA || "-")}</div><div class="actions"><button id="taskBABtn" class="secondary">📄 Buka BA</button>${ba.pdfUrl ? `<button id="taskPDFBtn" class="secondary">⬇ Download PDF</button>` : ""}</div></div>`;
-                  $("taskBABtn").onclick = () => openBeritaAcara(ba);
+                  $("taskBABtn").onclick = () => showModal(`<h2>📄 Berita Acara</h2><div class="details-grid"><div class="kv"><small>Nomor BA</small><b>${esc(ba.nomorBA || ba.idBA || "-")}</b></div><div class="kv"><small>Nomor Meter</small><b>${esc(ba.nomorMeter || t.nomorMeter || "-")}</b></div><div class="kv"><small>Petugas</small><b>${esc(ba.petugas || t.petugas || "-")}</b></div><div class="kv"><small>Tanggal</small><b>${esc(ba.tanggal || "-")}</b></div></div><div class="actions">${ba.pdfUrl ? `<button class="primary" onclick="window.open('${String(ba.pdfUrl).replace(/'/g,"%27")}', '_blank', 'noopener,noreferrer')">⬇ Download PDF BA</button>` : ""}</div>`);
                   if ($("taskPDFBtn")) $("taskPDFBtn").onclick = () => window.open(ba.pdfUrl, "_blank", "noopener,noreferrer");
                 } else {
                   area.innerHTML = '<div class="alert">Berita Acara belum tersedia.</div>';
