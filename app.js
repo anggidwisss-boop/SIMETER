@@ -1,5 +1,5 @@
 const $ = id => document.getElementById(id);
-const APP_VERSION = "8.0.0";
+const APP_VERSION = "8.0.1";
 let API = localStorage.getItem("simeter_api_url") || "";
 let USER = null, meters = [], tasks = [], history = [], currentPage = "dashboard", scanner = null;
 
@@ -51,8 +51,8 @@ async function checkBackendAfterRestore() {
     const x = await request("ping", {timeout:10000});
     if (!x || !x.ok || x.app !== "SIMETER") throw new Error("Backend bukan API SIMETER");
     localStorage.setItem("simeter_backend_version", String(x.version || ""));
-    if (String(x.version || "").split(".")[0] !== "7") {
-      console.warn("SIMETER backend masih versi lama:", x.version);
+    if (String(x.version || "").split(".")[0] !== "8") {
+      console.warn("SIMETER backend version:", x.version);
     }
   } catch (e) {
     console.warn("Backend belum terhubung setelah refresh:", e);
