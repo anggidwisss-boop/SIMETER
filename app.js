@@ -1,5 +1,5 @@
 const $ = id => document.getElementById(id);
-const APP_VERSION = "7.0.0";
+const APP_VERSION = "7.1.0";
 let API = localStorage.getItem("simeter_api_url") || "";
 let USER = null, meters = [], tasks = [], history = [], currentPage = "dashboard", scanner = null;
 
@@ -201,24 +201,27 @@ async function renderDashboard() {
   const recent = $("recent");
   try {
     if (!API) throw Error("URL Web App belum diisi. Buka Pengaturan → Koneksi.");
-    // Satu endpoint ringkasan dipanggil lebih dulu agar dashboard tidak bergantung pada sesi UI lama.
-    const d = await request("getDashboard", {params:{username:USER?.username||""},timeout:15000});
-    if (!d.ok) throw Error(d.error || "Sesi/backend tidak valid. Pastikan Code.gs V7 sudah di-deploy.");
+    // Dashboard dibuat kompatibel dengan deployment lama maupun V7.
+    // Jangan menggagalkan seluruh dashboard hanya karena endpoint getDashboard belum tersedia.
+    let summary = null;
+    try {
+      const d = await request("getDashboard", {params:{username:USER?.username||""},timeout:15000});
+      if (d && d.ok) summary = d.data || {};
+    } catch (_) {}
 
     const [m,h,t] = await Promise.all([
       request("getMeters", {timeout:15000}),
       request("getHistory", {timeout:15000}),
       request("getTasks", {params:{username:USER?.username||""},timeout:15000})
     ]);
-    if (!m.ok) throw Error(m.error || "Gagal mengambil data meter");
-    if (!h.ok) throw Error(h.error || "Gagal mengambil riwayat");
-    if (!t.ok) throw Error(t.error || "Gagal mengambil tugas");
+    if (!m || !m.ok) throw Error(m?.error || "Gagal mengambil data meter. Periksa deployment Apps Script.");
+    if (!h || !h.ok) throw Error(h?.error || "Gagal mengambil riwayat. Periksa deployment Apps Script.");
+    if (!t || !t.ok) throw Error(t?.error || "Gagal mengambil tugas. Periksa deployment Apps Script.");
 
     meters = m.data || []; history = h.data || h.rows || []; tasks = t.data || [];
-    const summary = d.data || {};
-    $("sMeters").textContent = summary.totalMeter ?? meters.length;
+    $("sMeters").textContent = summary?.totalMeter ?? meters.length;
     $("sHist").textContent = history.length;
-    $("sTasks").textContent = summary.tugasTerbuka ?? tasks.filter(x => x.status !== "SELESAI").length;
+    $("sTasks").textContent = summary?.tugasTerbuka ?? tasks.filter(x => x.status !== "SELESAI").length;
     const due = meters.filter(m => m.jatuhTempo && daysUntil(m.jatuhTempo) <= 7);
     $("sDue").textContent = due.length;
     $("dashAlerts").innerHTML = due.slice(0,5).map(m => `<div class="alert ${daysUntil(m.jatuhTempo) < 0 ? "danger" : ""}">⚠ <b>${esc(m.nomorMeter)}</b> — ${daysUntil(m.jatuhTempo) < 0 ? "terlambat" : "jatuh tempo " + esc(m.jatuhTempo)}</div>`).join("");
