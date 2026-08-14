@@ -28,31 +28,19 @@
     </div>
     <footer>SIMETER · Preventive & Corrective Maintenance<br>Gunakan akun sesuai hak akses Anda.</footer>
   </section>
-
   <section id="mainView" hidden>
     <header class="topbar"><div><b>SIMETER</b><small id="roleLine"></small></div><div class="top-actions"><span id="onlineDot">● Online</span><button id="notifBtn">🔔</button><button id="logoutBtn">Keluar</button></div></header>
     <main class="container">
       <div class="page-head"><h1 id="pageTitle">Ringkasan</h1><span id="userName"></span></div>
-      <section id="dashboard" class="view"></section>
-      <section id="metersView" class="view" hidden></section>
-      <section id="scanView" class="view" hidden></section>
-      <section id="tasksView" class="view" hidden></section>
-      <section id="adminView" class="view" hidden></section>
-      <section id="profileView" class="view" hidden></section>
-      <section id="settingsView" class="view" hidden></section>
+      <section id="dashboard" class="view"></section><section id="metersView" class="view" hidden></section><section id="scanView" class="view" hidden></section><section id="tasksView" class="view" hidden></section><section id="adminView" class="view" hidden></section><section id="profileView" class="view" hidden></section><section id="settingsView" class="view" hidden></section>
     </main>
-    <nav class="bottom-nav">
-      <button data-page="dashboard">⌂<small>Beranda</small></button>
-      <button data-page="meters">▦<small>Meter</small></button>
-      <button data-page="scan">▣<small>Scan</small></button>
-      <button data-page="tasks">☷<small>Tugas</small></button>
-      <button data-page="more">•••<small>Lainnya</small></button>
-    </nav>
+    <nav class="bottom-nav"><button data-page="dashboard">⌂<small>Beranda</small></button><button data-page="meters">▦<small>Meter</small></button><button data-page="scan">▣<small>Scan</small></button><button data-page="tasks">☷<small>Tugas</small></button><button data-page="more">•••<small>Lainnya</small></button></nav>
   </section>
 </div>
 <div id="modal" class="modal" hidden aria-hidden="true" style="display:none!important"><div class="modal-card"><button class="close" id="closeModal" type="button">×</button><div id="modalBody"></div></div></div>
 <script src="https://unpkg.com/html5-qrcode@2.3.8/html5-qrcode.min.js"></script>
 <script src="app.js?v=20260814-10"></script>
 <script src="enhancements.js?v=20260814-2"></script>
+<script src="finalize.js?v=20260814-1"></script>
 </body>
 </html>
