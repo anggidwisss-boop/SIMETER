@@ -4,18 +4,18 @@
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
   <meta name="theme-color" content="#1769e0">
-  <meta name="description" content="SIMETER - Sistem Informasi Pemeliharaan Meter">
+  <meta name="description" content="RIMPU - Rapid Inspection & Monitoring">
   <link rel="manifest" href="manifest.json">
-  <link rel="stylesheet" href="style.css?v=20260814-8">
-  <link rel="stylesheet" href="login-theme.css?v=20260814-1">
-  <title>SIMETER</title>
+  <link rel="stylesheet" href="style.css?v=20260814-9">
+  <link rel="stylesheet" href="login-theme.css?v=20260814-2">
+  <title>RIMPU</title>
 </head>
 <body>
 <div id="app">
   <section id="loginView" class="login-page">
     <div class="login-shell">
       <div class="login-visual">
-        <div class="visual-badge">SIMETER · TM</div>
+        <div class="visual-badge">RIMPU · TM</div>
         <div class="visual-image" aria-label="RIMPU - Rapid Inspection & Monitoring"></div>
         <div class="visual-copy">
           <span>PELANGGAN UTAMA - TM</span>
@@ -24,26 +24,26 @@
         </div>
       </div>
       <div class="login-panel">
-        <div class="brand"><div class="logo">SI⚡</div><div><b>SIMETER</b><small>Sistem Informasi Pemeliharaan Meter</small></div></div>
+        <div class="brand"><div class="logo"><img src="logo-rimpu.svg" alt="RIMPU"></div><div><b>RIMPU</b><small>Rapid Inspection & Monitoring</small></div></div>
         <div class="login-card">
-          <div class="login-title"><div class="logo soft">SI⚡</div><div><h1>Selamat Datang</h1><p>Masuk untuk mengelola pemeliharaan meter.</p></div></div>
+          <div class="login-title"><div class="logo soft"><img src="logo-rimpu.svg" alt="RIMPU"></div><div><h1>Selamat Datang</h1><p>Masuk untuk mengelola pemeriksaan dan pemeliharaan meter.</p></div></div>
           <div class="chips"><span>🔐 Akses Terproteksi</span><span>☁ Spreadsheet</span><span>📍 GPS & Foto</span></div>
           <label>Username<input id="loginUser" autocomplete="username" placeholder="Username"></label>
           <label>Kata sandi<div class="password-wrap"><input id="loginPass" type="password" autocomplete="current-password" placeholder="Kata sandi"><button id="togglePass" type="button">◉</button></div></label>
-          <button id="loginBtn" class="primary big">Masuk ke SIMETER →</button>
+          <button id="loginBtn" class="primary big">Masuk ke RIMPU →</button>
           <div id="loginMsg" class="msg"></div>
-          <div class="connection">● Sistem pemeliharaan meter terintegrasi</div>
+          <div class="connection">● Sistem RIMPU terintegrasi</div>
           <details class="connection-settings"><summary>⚙ Pengaturan koneksi</summary>
             <label>URL Web App Google Apps Script<input id="apiUrl" placeholder="https://script.google.com/macros/s/.../exec"></label>
             <button id="saveApi" class="secondary">Simpan & Tes Koneksi</button>
           </details>
         </div>
-        <footer>SIMETER · Preventive & Corrective Maintenance<br>Gunakan akun sesuai hak akses Anda.</footer>
+        <footer>RIMPU · Rapid Inspection & Monitoring<br>PELANGGAN UTAMA - TM</footer>
       </div>
     </div>
   </section>
   <section id="mainView" hidden>
-    <header class="topbar"><div><b>SIMETER</b><small id="roleLine"></small></div><div class="top-actions"><span id="onlineDot">● Online</span><button id="notifBtn">🔔</button><button id="logoutBtn">Keluar</button></div></header>
+    <header class="topbar"><div><b>RIMPU</b><small id="roleLine"></small></div><div class="top-actions"><span id="onlineDot">● Online</span><button id="notifBtn">🔔</button><button id="logoutBtn">Keluar</button></div></header>
     <main class="container">
       <div class="page-head"><h1 id="pageTitle">Ringkasan</h1><span id="userName"></span></div>
       <section id="dashboard" class="view"></section><section id="metersView" class="view" hidden></section><section id="scanView" class="view" hidden></section><section id="tasksView" class="view" hidden></section><section id="adminView" class="view" hidden></section><section id="profileView" class="view" hidden></section><section id="settingsView" class="view" hidden></section>
@@ -56,5 +56,6 @@
 <script src="app.js?v=20260814-10"></script>
 <script src="enhancements.js?v=20260814-2"></script>
 <script src="finalize.js?v=20260814-2"></script>
+<script src="rebrand.js?v=20260814-1"></script>
 </body>
 </html>
