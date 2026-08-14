@@ -1,9 +1,9 @@
 {
-  "name":"SIMETER - Sistem Informasi Pemeliharaan Meter",
-  "short_name":"SIMETER",
+  "name":"RIMPU - Rapid Inspection & Monitoring",
+  "short_name":"RIMPU",
   "start_url":"./",
   "display":"standalone",
   "background_color":"#f4f7fb",
   "theme_color":"#1769e0",
-  "icons":[]
+  "icons":[{"src":"logo-rimpu.svg","sizes":"any","type":"image/svg+xml","purpose":"any maskable"}]
 }
