@@ -4,6 +4,6 @@
   "start_url":"./",
   "display":"standalone",
   "background_color":"#f4f7fb",
-  "theme_color":"#1769e0",
-  "icons":[{"src":"logo-rimpu.svg","sizes":"any","type":"image/svg+xml","purpose":"any maskable"}]
+  "theme_color":"#062d63",
+  "icons":[{"src":"logo-rimpu.svg?v=20260814-2","sizes":"any","type":"image/svg+xml","purpose":"any maskable"}]
 }
