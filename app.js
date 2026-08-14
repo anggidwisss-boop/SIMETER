@@ -287,8 +287,96 @@ async function saveMaintenance() {
 
 function fileToDataUrl(f) { return new Promise((res, rej) => { const r = new FileReader(); r.onload = () => res(r.result); r.onerror = rej; r.readAsDataURL(f); }); }
 
-async function loadTasks() { $("tasksView").innerHTML = `<div class="toolbar">${["SUPER_ADMIN","ADMIN","SUPERVISOR"].includes(USER?.role) ? `<button id="newTaskBtn" class="primary">+ Penugasan Baru</button>` : ""}<button id="refreshTasks" class="secondary">↻</button></div><div id="taskList">Memuat...</div>`; if ($("newTaskBtn")) $("newTaskBtn").onclick = newTask; $("refreshTasks").onclick = loadTasks; try { const params = ["SUPER_ADMIN","ADMIN","SUPERVISOR"].includes(USER?.role) ? {} : { username: USER?.username || "" }; const r = await request("getTasks", { params }); tasks = r.data || []; $("taskList").innerHTML = tasks.map(t => `<div class="card task" data-task="${esc(t.id)}"><div><b>${esc(t.nomorMeter || t.judul || "Tugas")}</b><div>${esc(t.judul || t.keterangan || "")}</div><div class="meta">${esc(t.petugas || t.assignee || "-")} · Jatuh tempo ${esc(t.jatuhTempo || t.dueDate || "-")}</div></div><span class="badge">${esc(t.status || "TERBUKA")}</span></div>`).join("") || '<div class="empty">Tidak ada tugas.</div>'; document.querySelectorAll("[data-task]").forEach(el => el.onclick = () => openTask(tasks.find(t => t.id === el.dataset.task))); } catch(e) { $("taskList").innerHTML = '<div class="alert danger">' + esc(e.message) + '</div>'; } }
-function openTask(t) { if (!t) return; showModal(`<h2>${esc(t.judul || "Tugas Pemeliharaan")}</h2><div class="details-grid"><div class="kv"><small>Nomor Meter</small><b>${esc(t.nomorMeter || "-")}</b></div><div class="kv"><small>Petugas</small><b>${esc(t.petugas || t.assignee || "-")}</b></div><div class="kv"><small>Jatuh Tempo</small><b>${esc(t.jatuhTempo || t.dueDate || "-")}</b></div><div class="kv"><small>Status</small><b>${esc(t.status || "TERBUKA")}</b></div></div><div class="card"><b>Keterangan</b><p>${esc(t.keterangan || "-")}</p></div><div class="actions"><button id="taskDo" class="primary">🔧 Kerjakan Pemeliharaan</button></div>`); $("taskDo").onclick = () => { closeModal(); openMaintenance(t.nomorMeter); }; }
+async function loadTasks() {
+  $("tasksView").innerHTML = `<div class="toolbar">${["SUPER_ADMIN","ADMIN","SUPERVISOR"].includes(USER?.role) ? `<button id="newTaskBtn" class="primary">+ Penugasan Baru</button>` : ""}<button id="refreshTasks" class="secondary">↻</button></div><div id="taskList">Memuat...</div>`;
+  if ($("newTaskBtn")) $("newTaskBtn").onclick = newTask;
+  $("refreshTasks").onclick = loadTasks;
+  try {
+    const params = ["SUPER_ADMIN","ADMIN","SUPERVISOR"].includes(USER?.role) ? {} : { username: USER?.username || "" };
+    const r = await request("getTasks", { params });
+    if (!r || !r.ok) throw Error(r?.error || "Gagal mengambil penugasan.");
+    tasks = r.data || [];
+
+    const baByTask = {};
+    await Promise.all(tasks.filter(t => String(t.status || "").toUpperCase() === "SELESAI").map(async t => {
+      try {
+        const br = await request("getBeritaAcaraByTask", { params: { idTugas: t.id } });
+        if (br && br.ok && br.data) baByTask[String(t.id)] = br.data;
+      } catch (_) {}
+    }));
+
+    $("taskList").innerHTML = tasks.map(t => {
+      const ba = baByTask[String(t.id)];
+      const completed = String(t.status || "").toUpperCase() === "SELESAI";
+      const pdf = ba?.pdfUrl || "";
+      const baButton = `<button class="secondary task-ba" data-task-ba="${esc(t.id)}">📄 BA</button>`;
+      const pdfButton = pdf
+        ? `<button class="secondary task-pdf" data-pdf-url="${esc(pdf)}">⬇ PDF BA</button>`
+        : `<button class="secondary task-pdf-generate" data-task-pdf="${esc(t.id)}">⬇ PDF BA</button>`;
+      return `<div class="card task" data-task="${esc(t.id)}"><div><b>${esc(t.nomorMeter || t.judul || "Tugas")}</b><div>${esc(t.judul || t.keterangan || "")}</div><div class="meta">${esc(t.petugas || t.assignee || "-")} · Jatuh tempo ${esc(t.jatuhTempo || t.dueDate || "-")}</div></div><div class="task-actions"><span class="badge">${esc(t.status || "TERBUKA")}</span>${completed ? `${baButton}${pdfButton}` : `<button class="primary task-complete" data-task-complete="${esc(t.id)}">✓ Selesai</button>`}</div></div>`;
+    }).join("") || '<div class="empty">Tidak ada tugas.</div>';
+
+    document.querySelectorAll("[data-task]").forEach(el => el.onclick = e => {
+      if (e.target.closest("button")) return;
+      openTask(tasks.find(t => t.id === el.dataset.task));
+    });
+    document.querySelectorAll(".task-complete").forEach(btn => btn.onclick = e => {
+      e.stopPropagation();
+      const t = tasks.find(x => x.id === btn.dataset.taskComplete);
+      if (t) openBeritaAcara(t);
+    });
+    document.querySelectorAll(".task-ba").forEach(btn => btn.onclick = async e => {
+      e.stopPropagation();
+      const t = tasks.find(x => x.id === btn.dataset.taskBa);
+      if (t) await openTask(t);
+    });
+    document.querySelectorAll(".task-pdf").forEach(btn => btn.onclick = e => {
+      e.stopPropagation();
+      const url = btn.dataset.pdfUrl;
+      if (url) window.open(url, "_blank", "noopener,noreferrer");
+    });
+    document.querySelectorAll(".task-pdf-generate").forEach(btn => btn.onclick = async e => {
+      e.stopPropagation();
+      const t = tasks.find(x => x.id === btn.dataset.taskPdf);
+      if (!t) return;
+      try {
+        const br = await request("getBeritaAcaraByTask", { params: { idTugas: t.id } });
+        if (!br?.data?.idBA) return alert("Berita Acara belum tersedia.");
+        const pdf = await request("createBAPdf", { method:"POST", body:{idBA:br.data.idBA} });
+        if (!pdf?.ok || !pdf.pdfUrl) throw Error(pdf?.error || "PDF belum dapat dibuat.");
+        window.open(pdf.pdfUrl, "_blank", "noopener,noreferrer");
+        loadTasks();
+      } catch (err) { alert("Gagal membuka PDF BA: " + err.message); }
+    });
+  } catch(e) {
+    $("taskList").innerHTML = '<div class="alert danger">' + esc(e.message) + '</div>';
+  }
+}
+
+async function openTask(t) {
+  if (!t) return;
+  const completed = String(t.status || "").toUpperCase() === "SELESAI";
+  showModal(`<h2>${esc(t.judul || "Tugas Pemeliharaan")}</h2><div class="details-grid"><div class="kv"><small>Nomor Meter</small><b>${esc(t.nomorMeter || "-")}</b></div><div class="kv"><small>Petugas</small><b>${esc(t.petugas || t.assignee || "-")}</b></div><div class="kv"><small>Jatuh Tempo</small><b>${esc(t.jatuhTempo || t.dueDate || "-")}</b></div><div class="kv"><small>Status</small><b>${esc(t.status || "TERBUKA")}</b></div></div><div class="card"><b>Keterangan</b><p>${esc(t.keterangan || "-")}</p></div><div id="taskBAArea"></div><div class="actions">${completed ? "" : `<button id="taskDo" class="primary">🔧 Kerjakan Pemeliharaan</button>`}</div>`);
+  if ($("taskDo")) $("taskDo").onclick = () => { closeModal(); openMaintenance(t.nomorMeter); };
+
+  if (completed) {
+    const area = $("taskBAArea");
+    area.innerHTML = '<div class="msg">Memuat Berita Acara...</div>';
+    try {
+      const r = await request("getBeritaAcaraByTask", { params:{idTugas:t.id} });
+      const ba = r?.data;
+      if (ba) {
+        area.innerHTML = `<div class="card"><b>📄 Berita Acara tersedia</b><div class="meta">Nomor BA: ${esc(ba.nomorBA || ba.idBA || "-")}</div><div class="actions"><button id="taskBABtn" class="secondary">📄 Buka BA</button>${ba.pdfUrl ? `<button id="taskPDFBtn" class="secondary">⬇ Download PDF</button>` : ""}</div></div>`;
+        $("taskBABtn").onclick = () => showModal(`<h2>📄 Berita Acara</h2><div class="details-grid"><div class="kv"><small>Nomor BA</small><b>${esc(ba.nomorBA || ba.idBA || "-")}</b></div><div class="kv"><small>Nomor Meter</small><b>${esc(ba.nomorMeter || t.nomorMeter || "-")}</b></div><div class="kv"><small>Petugas</small><b>${esc(ba.petugas || t.petugas || "-")}</b></div><div class="kv"><small>Tanggal</small><b>${esc(ba.tanggal || "-")}</b></div></div><div class="actions">${ba.pdfUrl ? `<button class="primary" onclick="window.open('${String(ba.pdfUrl).replace(/'/g,"%27")}', '_blank', 'noopener,noreferrer')">⬇ Download PDF BA</button>` : ""}</div>`);
+        if ($("taskPDFBtn")) $("taskPDFBtn").onclick = () => window.open(ba.pdfUrl, "_blank", "noopener,noreferrer");
+      } else {
+        area.innerHTML = '<div class="alert">Berita Acara belum tersedia.</div>';
+      }
+    } catch (e) {
+      area.innerHTML = '<div class="alert danger">' + esc(e.message) + '</div>';
+    }
+  }
+}
 
 async function newTask() {
   try {
