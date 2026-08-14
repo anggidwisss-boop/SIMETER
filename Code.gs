@@ -5,10 +5,11 @@ const SHEETS={USERS:"USERS",MASTER:"MASTER_METER",DATA:"PEMELIHARAAN",TASKS:"PEN
 function doGet(e){
   const p=e?.parameter||{}, a=p.action||"ping";
   try{
-    if(a==="ping")return json({ok:true,app:"SIMETER",message:"SIMETER API aktif",time:new Date().toISOString()});
+    if(a==="ping")return json({ok:true,app:"SIMETER",version:"4.0.0",message:"SIMETER API aktif",time:new Date().toISOString()});
     if(a==="getMeters")return json(getMeters());
     if(a==="getHistory"||a==="history")return json(getHistory());
     if(a==="getUsers")return json(getUsers());
+    if(a==="login")return json(login(String(p.username||""),String(p.password||"")));
     if(a==="getTasks")return json(getTasks(p.username||""));
     if(a==="meter")return json(findMeter(p.nomorMeter||""));
     return json({ok:false,error:"Action tidak dikenal: "+a});
@@ -47,16 +48,58 @@ function seedAdmin(){
 }
 function sha256(s){const d=Utilities.computeDigest(Utilities.DigestAlgorithm.SHA_256,String(s),Utilities.Charset.UTF_8);return d.map(b=>(b<0?b+256:b).toString(16).padStart(2,"0")).join("")}
 function login(username,password){
-  setupSheets();const rows=ss().getSheetByName(SHEETS.USERS).getDataRange().getDisplayValues();
-  for(let i=1;i<rows.length;i++){if(rows[i][0]===username&&rows[i][2]===sha256(password)&&String(rows[i][5]).toLowerCase()!=="false")return {ok:true,user:{username:rows[i][0],name:rows[i][1],role:rows[i][3],unit:rows[i][4]}}}
+  setupSheets();
+  const u=String(username||"").trim().toLowerCase();
+  const hash=sha256(String(password||""));
+  const rows=ss().getSheetByName(SHEETS.USERS).getDataRange().getDisplayValues();
+  for(let i=1;i<rows.length;i++){
+    const active=String(rows[i][5]===undefined?true:rows[i][5]).trim().toLowerCase()!=="false";
+    if(String(rows[i][0]||"").trim().toLowerCase()===u && String(rows[i][2]||"").trim().toLowerCase()===hash && active){
+      return {ok:true,user:{username:String(rows[i][0]).trim(),name:String(rows[i][1]||rows[i][0]).trim(),role:String(rows[i][3]||"PETUGAS").trim(),unit:String(rows[i][4]||"").trim()}};
+    }
+  }
   return {ok:false,error:"Username atau kata sandi salah"};
 }
 function getUsers(){const sh=ss().getSheetByName(SHEETS.USERS);if(!sh||sh.getLastRow()<2)return{ok:true,data:[]};return{ok:true,data:sh.getDataRange().getDisplayValues().slice(1).map(r=>({username:r[0],name:r[1],role:r[3],unit:r[4],active:String(r[5]).toLowerCase()!=="false"}))}}
 function saveUser(d){const sh=ensure(SHEETS.USERS,["Username","Nama","Password Hash","Role","Unit","Aktif"]);if(!d.username||!d.password)return{ok:false,error:"Username dan password wajib"};const rows=sh.getDataRange().getDisplayValues();for(let i=1;i<rows.length;i++)if(rows[i][0]===d.username)return{ok:false,error:"Username sudah ada"};sh.appendRow([d.username,d.name||d.username,sha256(d.password),d.role||"PETUGAS",d.unit||"",d.active!==false]);return{ok:true}}
 function getMeters(){
-  const sh=ss().getSheetByName(SHEETS.MASTER);if(!sh||sh.getLastRow()<2)return{ok:true,data:[]};
-  const r=sh.getDataRange().getDisplayValues().slice(1).map(x=>({idPelanggan:x[0],nomorMeter:x[1],namaPelanggan:x[2],alamat:x[3],kategori:x[4],subKategori:x[5],merk:x[6],status:x[7]||"Aktif",intervalHari:x[8]||30,terakhirPemeliharaan:x[9],jatuhTempo:x[10]}));
-  return{ok:true,data:r};
+  const sh=ss().getSheetByName(SHEETS.MASTER);
+  if(sh && sh.getLastRow()>=2){
+    const r=sh.getDataRange().getDisplayValues().slice(1)
+      .filter(x=>String(x[1]||"").trim()!=="")
+      .map(x=>({idPelanggan:x[0],nomorMeter:x[1],namaPelanggan:x[2],alamat:x[3],kategori:x[4],subKategori:x[5],merk:x[6],status:x[7]||"Aktif",intervalHari:x[8]||30,terakhirPemeliharaan:x[9],jatuhTempo:x[10]}));
+    if(r.length) return{ok:true,data:r};
+  }
+
+  // Jika MASTER_METER masih kosong, bangun daftar meter dari PEMELIHARAAN
+  // agar data lama tetap tampil. Data tidak ditulis ke MASTER sampai user
+  // mengisinya; ini hanya fallback pembacaan.
+  const ph=ss().getSheetByName(SHEETS.DATA);
+  if(!ph || ph.getLastRow()<2) return{ok:true,data:[]};
+  const rows=ph.getDataRange().getDisplayValues().slice(1);
+  const map={};
+  rows.forEach(r=>{
+    const meter=String(r[3]||"").trim();
+    if(!meter) return;
+    if(!map[meter]) map[meter]={
+      idPelanggan:r[2]||"", nomorMeter:meter, namaPelanggan:r[4]||"",
+      alamat:r[5]||"", kategori:"", subKategori:"", merk:"", status:"Aktif",
+      intervalHari:30, terakhirPemeliharaan:r[1]||"", jatuhTempo:""
+    };
+    if(r[1]) map[meter].terakhirPemeliharaan=r[1];
+  });
+  const data=Object.keys(map).map(k=>{
+    const m=map[k];
+    if(m.terakhirPemeliharaan){
+      const d=parseDateSafe(m.terakhirPemeliharaan);
+      if(!isNaN(d.getTime())){
+        d.setDate(d.getDate()+Number(m.intervalHari||30));
+        m.jatuhTempo=Utilities.formatDate(d,Session.getScriptTimeZone(),"yyyy-MM-dd");
+      }
+    }
+    return m;
+  });
+  return{ok:true,data:data,source:"PEMELIHARAAN_FALLBACK"};
 }
 function findMeter(n){return{ok:true,meter:getMeters().data.find(x=>String(x.nomorMeter).trim()===String(n).trim())||null}}
 function getHistory(){const sh=ss().getSheetByName(SHEETS.DATA);if(!sh||sh.getLastRow()<2)return{ok:true,data:[],rows:[]};const v=sh.getDataRange().getDisplayValues().slice(1).reverse().slice(0,500);return{ok:true,rows:v,data:v.map(r=>({timestamp:r[0],tanggal:r[1],idPelanggan:r[2],nomorMeter:r[3],namaPelanggan:r[4],alamat:r[5],stand:r[6],kondisi:r[7],kondisiSegel:r[8],jenis:r[9],hasilPemeriksaan:r[10],petugas:r[11],username:r[12],keterangan:r[13],latitude:r[14],longitude:r[15],accuracy:r[16],fotoUrl:r[17]}))}}

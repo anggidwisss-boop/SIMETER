@@ -26,9 +26,20 @@ window.addEventListener("DOMContentLoaded", () => {
   $("modal").addEventListener("click", e => { if (e.target === $("modal")) closeModal(); });
   document.addEventListener("keydown", e => { if (e.key === "Escape") closeModal(); });
   document.querySelectorAll(".bottom-nav button").forEach(b => b.onclick = () => navigate(b.dataset.page));
-  // V4 tidak otomatis membuka aplikasi dari sesi browser lama. Login harus eksplisit.
-  localStorage.removeItem("simeter_user");
-  USER = null;
+  // Pertahankan sesi saat halaman di-refresh. Logout tetap menghapus sesi.
+  try {
+    const saved = localStorage.getItem("simeter_user");
+    if (saved) {
+      const u = JSON.parse(saved);
+      if (u && u.username && u.role) {
+        USER = u;
+        showMain();
+      }
+    }
+  } catch (_) {
+    localStorage.removeItem("simeter_user");
+    USER = null;
+  }
 });
 
 function saveApi() {
