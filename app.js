@@ -79,8 +79,8 @@ async function login() {
   } catch(e) { setLoginMsg(e?.name==="AbortError"?"Koneksi API timeout. Periksa URL Web App.":(e.message||"Login gagal")); }
   finally { $("loginBtn").disabled=false; }
 }
-function logout() { localStorage.removeItem("simeter_user"); USER = null; closeModal(); $("mainView").hidden = true; $("loginView").hidden = false; }
-function showMain() { $("loginView").hidden = true; $("mainView").hidden = false; $("roleLine").textContent = (USER?.name || USER?.username || "User") + " · " + (USER?.role || "PETUGAS"); $("userName").textContent = USER?.name || USER?.username || ""; navigate("dashboard"); }
+function logout() { localStorage.removeItem("simeter_user"); USER = null; closeModal(); $("mainView").hidden = true; $("mainView").style.display = "none"; $("loginView").hidden = false; $("loginView").style.display = ""; }
+function showMain() { $("loginView").hidden = true; $("loginView").style.display = "none"; $("mainView").hidden = false; $("mainView").style.display = ""; $("roleLine").textContent = (USER?.name || USER?.username || "User") + " · " + (USER?.role || "PETUGAS"); $("userName").textContent = USER?.name || USER?.username || ""; navigate("dashboard"); }
 function hideViews() { document.querySelectorAll(".view").forEach(v => v.hidden = true); }
 function navigate(page) {
   if (page === "more") return openMore();
