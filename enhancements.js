@@ -12,13 +12,78 @@
         '<div class="kv"><small>ID Pelanggan</small><b>' + esc2(m.idPelanggan || "-") + '</b></div><div class="kv"><small>Interval</small><b>' + esc2(m.intervalHari || 30) + ' hari</b></div><div class="kv"><small>Jatuh Tempo</small><b>' + esc2(m.jatuhTempo || "-") + '</b></div><div class="kv"><small>Pemeliharaan Terakhir</small><b>' + esc2(m.terakhirPemeliharaan || "-") + '</b></div>' +
         '<div class="kv"><small>LWBP</small><b>' + esc2(m.standLWBP || "-") + '</b></div><div class="kv"><small>WBP</small><b>' + esc2(m.standWBP || "-") + '</b></div><div class="kv"><small>KVARH</small><b>' + esc2(m.standKVARH || "-") + '</b></div><div class="kv"><small>KWH TOTAL</small><b>' + esc2(m.standKWHtotal || "-") + '</b></div></div></div>';
     };
+
+    /*
+     * TUGAS:
+     * - Pemberi tugas (SUPER_ADMIN/ADMIN/SUPERVISOR) melihat seluruh tugas.
+     * - PETUGAS hanya melihat tugas yang ditujukan kepadanya.
+     * getTasks lama selalu menerima username otomatis dari request(), sehingga
+     * tugas yang dibuat oleh admin untuk orang lain tidak tampil di admin.
+     */
+    window.loadTasks = async function () {
+      $("tasksView").innerHTML = '<div class="toolbar">' +
+        (["SUPER_ADMIN","ADMIN","SUPERVISOR"].includes(USER?.role) ? '<button id="newTaskBtn" class="primary">+ Penugasan Baru</button>' : '') +
+        '<button id="refreshTasks" class="secondary">↻</button></div><div id="taskList">Memuat...</div>';
+      if ($("newTaskBtn")) $("newTaskBtn").onclick = newTask;
+      $("refreshTasks").onclick = window.loadTasks;
+      try {
+        var adminViewer = ["SUPER_ADMIN","ADMIN","SUPERVISOR"].includes(USER?.role);
+        var r;
+        if (adminViewer) {
+          // Sengaja tidak memakai request(), agar username admin tidak otomatis
+          // ditambahkan ke query dan semua penugasan dapat ditampilkan.
+          var qs = new URLSearchParams({action:"getTasks",v:(typeof APP_VERSION !== "undefined" ? APP_VERSION : "8.0.1")});
+          var resp = await fetch(API + "?" + qs.toString(), {cache:"no-store",redirect:"follow"});
+          var txt = await resp.text();
+          r = JSON.parse(txt);
+        } else {
+          r = await request("getTasks", {params:{username:USER?.username || ""}});
+        }
+        if (!r || !r.ok) throw Error(r?.error || "Gagal mengambil penugasan.");
+        tasks = r.data || [];
+        $("taskList").innerHTML = tasks.map(function(t){
+          var done = String(t.status || "TERBUKA").toUpperCase() === "SELESAI";
+          return '<div class="card task" data-task="' + esc2(t.id) + '"><div><b>' + esc2(t.nomorMeter || t.judul || "Tugas") + '</b><div>' + esc2(t.judul || t.keterangan || "") + '</div><div class="meta">' + esc2(t.petugas || t.assignee || "-") + ' · Jatuh tempo ' + esc2(t.jatuhTempo || t.dueDate || "-") + '</div></div><span class="badge">' + (done ? '✓ ' : '') + esc2(t.status || "TERBUKA") + '</span></div>';
+        }).join("") || '<div class="empty">Tidak ada tugas.</div>';
+        document.querySelectorAll("[data-task]").forEach(function(el){ el.onclick = function(){ window.openTask(tasks.find(function(t){return t.id === el.dataset.task;})); }; });
+      } catch(e) {
+        $("taskList").innerHTML = '<div class="alert danger">' + esc2(e.message || "Koneksi API gagal") + '</div>';
+      }
+    };
+
     window.openTask = function (t) {
       if (!t) return;
       var done = String(t.status || "TERBUKA").toUpperCase() === "SELESAI";
-      showModal('<h2>' + esc2(t.judul || "Tugas Pemeliharaan") + '</h2><div class="details-grid"><div class="kv"><small>Nomor Meter</small><b>' + esc2(t.nomorMeter || "-") + '</b></div><div class="kv"><small>Petugas</small><b>' + esc2(t.petugas || t.assignee || "-") + '</b></div><div class="kv"><small>Jatuh Tempo</small><b>' + esc2(t.jatuhTempo || t.dueDate || "-") + '</b></div><div class="kv"><small>Status</small><b>' + esc2(t.status || "TERBUKA") + '</b></div></div><div class="card"><b>Keterangan</b><p>' + esc2(t.keterangan || "-") + '</p></div><div class="actions">' + (done ? '<button class="secondary" disabled>✓ Tugas sudah selesai</button>' : '<button id="taskDo2" class="primary">🔧 Kerjakan Pemeliharaan</button><button id="taskFinish2" class="secondary">✓ Selesai + Berita Acara</button>') + '</div>');
-      var doBtn = document.getElementById("taskDo2"); if (doBtn) doBtn.onclick = function () { closeModal(); openMaintenance(t.nomorMeter); };
-      var finishBtn = document.getElementById("taskFinish2"); if (finishBtn) finishBtn.onclick = function () { closeModal(); openBeritaAcara(t); };
+      showModal('<h2>' + esc2(t.judul || "Tugas Pemeliharaan") + '</h2><div class="details-grid"><div class="kv"><small>Nomor Meter</small><b>' + esc2(t.nomorMeter || "-") + '</b></div><div class="kv"><small>Petugas</small><b>' + esc2(t.petugas || t.assignee || "-") + '</b></div><div class="kv"><small>Dibuat Oleh</small><b>' + esc2(t.createdBy || "-") + '</b></div><div class="kv"><small>Jatuh Tempo</small><b>' + esc2(t.jatuhTempo || t.dueDate || "-") + '</b></div><div class="kv"><small>Status</small><b>' + esc2(t.status || "TERBUKA") + '</b></div></div><div class="card"><b>Keterangan</b><p>' + esc2(t.keterangan || "-") + '</p></div><div class="actions">' +
+        (done ? '<button class="secondary" disabled>✓ Tugas sudah selesai</button>' : '<button id="taskDo2" class="primary">🔧 Kerjakan Pemeliharaan</button><button id="taskFinish2" class="secondary">✓ Selesai + Berita Acara</button>') +
+        '<button id="taskBA2" class="secondary">📝 Berita Acara</button></div><div id="baPdfArea" class="msg">Memeriksa Berita Acara...</div>');
+
+      var doBtn = document.getElementById("taskDo2");
+      if (doBtn) doBtn.onclick = function () { closeModal(); openMaintenance(t.nomorMeter); };
+      var finishBtn = document.getElementById("taskFinish2");
+      if (finishBtn) finishBtn.onclick = function () { closeModal(); openBeritaAcara(t); };
+      var baBtn = document.getElementById("taskBA2");
+      if (baBtn) baBtn.onclick = function () { openBeritaAcara(t); };
+
+      // PDF yang dibuat oleh Apps Script tersimpan di Google Drive dan URL-nya
+      // dicatat pada sheet BERITA_ACARA. Tampilkan tombol download saat tersedia.
+      request("getBeritaAcaraByTask", {params:{idTugas:t.id}}).then(function(r){
+        var area = document.getElementById("baPdfArea");
+        if (!area) return;
+        var ba = r && r.ok ? r.data : null;
+        if (ba && ba.pdfUrl) {
+          area.innerHTML = '<b>📄 Berita Acara tersedia.</b><br><a class="primary" href="' + esc2(ba.pdfUrl) + '" target="_blank" rel="noopener">⬇ Buka / Download PDF</a><div class="meta">Nomor BA: ' + esc2(ba.nomorBA || '-') + '</div>';
+        } else if (ba) {
+          area.innerHTML = '<b>📝 Berita Acara sudah ada.</b><br>PDF belum tersedia. Silakan buat ulang PDF dari proses Berita Acara.';
+        } else {
+          area.innerHTML = '<span class="muted">Belum ada Berita Acara untuk tugas ini.</span>';
+        }
+      }).catch(function(){
+        var area = document.getElementById("baPdfArea");
+        if (area) area.innerHTML = '<span class="muted">Berita Acara belum dapat diperiksa.</span>';
+      });
     };
+
     window.openMaintenance = function (nomor) {
       var m = (typeof meters !== 'undefined' ? meters : []).find(function (x) { return String(x.nomorMeter) === String(nomor); }) || {nomorMeter:nomor};
       var opts = function(a,s){ return a.map(function(x){ return '<option ' + (x===s?'selected':'') + '>' + esc2(x) + '</option>'; }).join(''); };
