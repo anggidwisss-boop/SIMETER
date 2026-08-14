@@ -1,4 +1,5 @@
 const $ = id => document.getElementById(id);
+const APP_VERSION = "4.0.0";
 let API = localStorage.getItem("simeter_api_url") || "";
 let USER = null, meters = [], tasks = [], history = [], currentPage = "dashboard", scanner = null;
 
@@ -25,8 +26,9 @@ window.addEventListener("DOMContentLoaded", () => {
   $("modal").addEventListener("click", e => { if (e.target === $("modal")) closeModal(); });
   document.addEventListener("keydown", e => { if (e.key === "Escape") closeModal(); });
   document.querySelectorAll(".bottom-nav button").forEach(b => b.onclick = () => navigate(b.dataset.page));
-  const saved = localStorage.getItem("simeter_user");
-  if (saved) { try { USER = JSON.parse(saved); showMain(); } catch (_) {} }
+  // V4 tidak otomatis membuka aplikasi dari sesi browser lama. Login harus eksplisit.
+  localStorage.removeItem("simeter_user");
+  USER = null;
 });
 
 function saveApi() {
@@ -38,37 +40,45 @@ function saveApi() {
 async function request(action, opts = {}) {
   if (!API) throw new Error("URL Web App belum diisi");
   const method = opts.method || "GET";
-  if (method === "GET") {
-    const qs = new URLSearchParams(opts.params || {});
-    qs.set("action", action);
-    const r = await fetch(API + "?" + qs.toString(), { cache: "no-store" });
+  const controller = new AbortController();
+  const timer = setTimeout(() => controller.abort(), opts.timeout || 20000);
+  try {
+    if (method === "GET") {
+      const qs = new URLSearchParams(opts.params || {}); qs.set("action", action); qs.set("v", APP_VERSION);
+      const r = await fetch(API + "?" + qs.toString(), {cache:"no-store",redirect:"follow",signal:controller.signal});
+      const t = await r.text();
+      try { return JSON.parse(t); } catch (_) { throw new Error("Respons API bukan JSON. Deploy Code.gs V4 terbaru."); }
+    }
+    const r = await fetch(API, {method:"POST",redirect:"follow",headers:{"Content-Type":"text/plain;charset=utf-8"},body:JSON.stringify({action,...(opts.body||{}),_v:APP_VERSION}),cache:"no-store",signal:controller.signal});
     const t = await r.text();
-    try { return JSON.parse(t); } catch (_) { throw new Error("Respons bukan JSON: " + t.slice(0, 160)); }
-  }
-  const r = await fetch(API, {
-    method: "POST",
-    headers: { "Content-Type": "text/plain;charset=utf-8" },
-    body: JSON.stringify({ action, ...(opts.body || {}) })
-  });
-  const t = await r.text();
-  try { return JSON.parse(t); } catch (_) { throw new Error("Respons bukan JSON: " + t.slice(0, 160)); }
+    try { return JSON.parse(t); } catch (_) { throw new Error("Respons API bukan JSON. Deploy Code.gs V4 terbaru."); }
+  } finally { clearTimeout(timer); }
 }
-
-async function testPing() { try { const x = await request("ping"); return !!x.ok; } catch (_) { return false; } }
+async function loginRequest(username,password) {
+  const qs = new URLSearchParams({action:"login",username,password,v:APP_VERSION});
+  const controller = new AbortController(); const timer = setTimeout(()=>controller.abort(),20000);
+  try {
+    const r = await fetch(API + "?" + qs.toString(), {cache:"no-store",redirect:"follow",signal:controller.signal});
+    const t = await r.text();
+    try { return JSON.parse(t); } catch (_) { throw new Error("Backend belum menggunakan Code.gs V4. Deploy versi baru Apps Script."); }
+  } finally { clearTimeout(timer); }
+}
+async function testPing(){ try { const x=await request("ping"); return !!x.ok && x.app==="SIMETER" && x.version==="4.0.0"; } catch(_){ return false; }}
 function setLoginMsg(x) { $("loginMsg").textContent = x; }
 
 async function login() {
-  const username = $("loginUser").value.trim(), password = $("loginPass").value;
-  if (!username || !password) return setLoginMsg("Username dan kata sandi wajib diisi.");
-  $("loginBtn").disabled = true; setLoginMsg("Menghubungkan...");
+  const username=$("loginUser").value.trim(), password=$("loginPass").value;
+  if(!username||!password)return setLoginMsg("Username dan kata sandi wajib diisi.");
+  if(!API)return setLoginMsg("Masukkan URL Web App Google Apps Script pada Pengaturan koneksi.");
+  $("loginBtn").disabled=true; setLoginMsg("Memverifikasi akun...");
   try {
-    const r = await request("login", { method: "POST", body: { username, password } });
-    if (!r.ok) throw new Error(r.error || "Login gagal");
-    USER = r.user; localStorage.setItem("simeter_user", JSON.stringify(USER)); showMain();
-  } catch (e) { setLoginMsg(e.message.includes("Failed to fetch") ? "Koneksi ke Google Apps Script gagal. Cek URL Web App." : e.message); }
-  finally { $("loginBtn").disabled = false; }
+    localStorage.removeItem("simeter_user"); USER=null;
+    const r=await loginRequest(username,password);
+    if(!r||!r.ok||!r.user) throw new Error(r?.error||"Username atau kata sandi salah");
+    USER=r.user; localStorage.setItem("simeter_user",JSON.stringify(USER)); setLoginMsg("Login berhasil. Membuka SIMETER..."); showMain();
+  } catch(e) { setLoginMsg(e?.name==="AbortError"?"Koneksi API timeout. Periksa URL Web App.":(e.message||"Login gagal")); }
+  finally { $("loginBtn").disabled=false; }
 }
-
 function logout() { localStorage.removeItem("simeter_user"); USER = null; closeModal(); $("mainView").hidden = true; $("loginView").hidden = false; }
 function showMain() { $("loginView").hidden = true; $("mainView").hidden = false; $("roleLine").textContent = (USER?.name || USER?.username || "User") + " · " + (USER?.role || "PETUGAS"); $("userName").textContent = USER?.name || USER?.username || ""; navigate("dashboard"); }
 function hideViews() { document.querySelectorAll(".view").forEach(v => v.hidden = true); }
