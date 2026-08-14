@@ -4,3 +4,5 @@
 /* FIX: hidden login must not override the browser hidden attribute */
 .login-page[hidden]{display:none!important}
 #mainView[hidden]{display:none!important}
+
+.form-row{display:grid;grid-template-columns:1fr 1fr;gap:10px}.meta{color:#7d899c;font-size:12px;margin-top:5px}@media(max-width:700px){.form-row{grid-template-columns:1fr}}
