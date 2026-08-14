@@ -42,10 +42,23 @@ window.addEventListener("DOMContentLoaded", () => {
   }
 });
 
-function saveApi() {
+async function saveApi() {
   API = $("apiUrl").value.trim().replace(/\/+$/, "");
   localStorage.setItem("simeter_api_url", API);
-  testPing().then(x => setLoginMsg(x ? "SIMETER API aktif" : "Koneksi gagal"));
+  if (!API) return setLoginMsg("URL Web App belum diisi.");
+  setLoginMsg("Mengecek koneksi...");
+  try {
+    const x = await request("ping");
+    if (x && x.ok && x.app === "SIMETER") {
+      setLoginMsg("SIMETER API aktif" + (x.version ? " · v" + x.version : ""));
+    } else {
+      setLoginMsg("API merespons, tetapi bukan API SIMETER.");
+    }
+  } catch (e) {
+    setLoginMsg(e?.name === "AbortError"
+      ? "Koneksi API timeout. Pastikan URL /exec benar."
+      : (e.message || "Koneksi gagal"));
+  }
 }
 
 async function request(action, opts = {}) {
@@ -58,11 +71,11 @@ async function request(action, opts = {}) {
       const qs = new URLSearchParams(opts.params || {}); qs.set("action", action); qs.set("v", APP_VERSION);
       const r = await fetch(API + "?" + qs.toString(), {cache:"no-store",redirect:"follow",signal:controller.signal});
       const t = await r.text();
-      try { return JSON.parse(t); } catch (_) { throw new Error("Respons API bukan JSON. Deploy Code.gs V4 terbaru."); }
+      try { return JSON.parse(t); } catch (_) { throw new Error("Respons API bukan JSON. Pastikan Web App Apps Script menggunakan URL /exec."); }
     }
     const r = await fetch(API, {method:"POST",redirect:"follow",headers:{"Content-Type":"text/plain;charset=utf-8"},body:JSON.stringify({action,...(opts.body||{}),_v:APP_VERSION}),cache:"no-store",signal:controller.signal});
     const t = await r.text();
-    try { return JSON.parse(t); } catch (_) { throw new Error("Respons API bukan JSON. Deploy Code.gs V4 terbaru."); }
+    try { return JSON.parse(t); } catch (_) { throw new Error("Respons API bukan JSON. Pastikan Web App Apps Script menggunakan URL /exec."); }
   } finally { clearTimeout(timer); }
 }
 async function loginRequest(username,password) {
@@ -71,10 +84,17 @@ async function loginRequest(username,password) {
   try {
     const r = await fetch(API + "?" + qs.toString(), {cache:"no-store",redirect:"follow",signal:controller.signal});
     const t = await r.text();
-    try { return JSON.parse(t); } catch (_) { throw new Error("Backend belum menggunakan Code.gs V4. Deploy versi baru Apps Script."); }
+    try { return JSON.parse(t); } catch (_) { throw new Error("Backend tidak mengembalikan JSON. Pastikan URL Web App /exec benar dan deployment aktif."); }
   } finally { clearTimeout(timer); }
 }
-async function testPing(){ try { const x=await request("ping"); return !!x.ok && x.app==="SIMETER" && x.version==="5.0.0"; } catch(_){ return false; }}
+async function testPing(){
+  try {
+    const x = await request("ping");
+    return !!x.ok && x.app === "SIMETER";
+  } catch (_) {
+    return false;
+  }
+}
 function setLoginMsg(x) { $("loginMsg").textContent = x; }
 
 async function login() {
