@@ -1,9 +1,7 @@
 /* SIMETER V9 enhancements: task completion + rich TM maintenance form */
 (function () {
   function esc2(v) {
-    return String(v == null ? "" : v).replace(/[&<>"']/g, function (c) {
-      return ({"&":"&amp;","<":"&lt;",">":"&gt;","\"":"&quot;","'":"&#39;"})[c];
-    });
+    return String(v == null ? "" : v).replace(/[&<>"']/g, function (c) { return ({"&":"&amp;","<":"&lt;",">":"&gt;","\"":"&quot;","'":"&#39;"})[c]; });
   }
   function install() {
     if (typeof window.openTask !== "function" || typeof window.showModal !== "function") { setTimeout(install, 250); return; }
@@ -22,7 +20,7 @@
       var finishBtn = document.getElementById("taskFinish2"); if (finishBtn) finishBtn.onclick = function () { closeModal(); openBeritaAcara(t); };
     };
     window.openMaintenance = function (nomor) {
-      var m = (window.meters || []).find(function (x) { return String(x.nomorMeter) === String(nomor); }) || {nomorMeter:nomor};
+      var m = (typeof meters !== 'undefined' ? meters : []).find(function (x) { return String(x.nomorMeter) === String(nomor); }) || {nomorMeter:nomor};
       var opts = function(a,s){ return a.map(function(x){ return '<option ' + (x===s?'selected':'') + '>' + esc2(x) + '</option>'; }).join(''); };
       showModal('<h2>🔧 Form Pemeliharaan Meter TM</h2><div class="form">' +
         '<div class="row"><label>Nomor Meter<input id="fmMeter" value="' + esc2(m.nomorMeter||'') + '"></label><label>ID Pelanggan<input id="fmId" value="' + esc2(m.idPelanggan||'') + '"></label></div>' +
@@ -44,7 +42,7 @@
       var v=function(id){var e=document.getElementById(id);return e?e.value.trim():'';}, kwh=v('fmKWH');
       var notes=[['PROFIL BANGUNAN TAMPAK DEPAN',v('fmBangunan')],['BANGUNAN KUBIKEL / TIANG PMCB',v('fmBangunanPMCB')],['KUBIKEL / PMCB',v('fmKubikel')],['KWH METER',v('fmKWHMeter')],['CT R',v('fmCTR')],['CT S',v('fmCTS')],['CT T',v('fmCTT')],['PT R',v('fmPTR')],['PT S',v('fmPTS')],['PT T',v('fmPTT')],['TEGANGAN R',v('fmVR')],['TEGANGAN S',v('fmVS')],['TEGANGAN T',v('fmVT')],['ARUS R',v('fmIR')],['ARUS S',v('fmIS')],['ARUS T',v('fmIT')],['KESIMPULAN',v('fmKesimpulan')],['STATUS PELANGGAN',v('fmStatus')]].filter(function(x){return x[1]!=='';}).map(function(x){return x[0]+': '+x[1];});
       var ket=v('fmKet'); if(ket) notes.push('CATATAN: '+ket);
-      var body={nomorMeter:v('fmMeter'),idPelanggan:v('fmId'),jenis:v('fmJenis'),kondisi:v('fmKondisi'),kondisiSegel:v('fmSegel'),hasilPemeriksaan:v('fmKesimpulan'),stand:kwh,standLWBP:v('fmLWBP'),standWBP:v('fmWBP'),standKVARH:v('fmKVARH'),standKWHtotal:kwh,keterangan:notes.join('\n'),petugas:window.USER?.name||window.USER?.username||'',username:window.USER?.username||'',...(window.gps||{})};
+      var body={nomorMeter:v('fmMeter'),idPelanggan:v('fmId'),jenis:v('fmJenis'),kondisi:v('fmKondisi'),kondisiSegel:v('fmSegel'),hasilPemeriksaan:v('fmKesimpulan'),stand:kwh,standLWBP:v('fmLWBP'),standWBP:v('fmWBP'),standKVARH:v('fmKVARH'),standKWHtotal:kwh,keterangan:notes.join('\n'),petugas:(typeof USER!=='undefined'&&USER?USER.name||USER.username:'')||'',username:(typeof USER!=='undefined'&&USER?USER.username:'')||'',...(typeof gps!=='undefined'?gps:{})};
       try{var r=await request('saveMaintenance',{method:'POST',body:body});if(!r.ok)throw Error(r.error||'Gagal menyimpan');closeModal();alert('Pemeliharaan tersimpan. Semua data teks pemeriksaan, stand, dan GPS sudah masuk database.');navigate('meters');}catch(e){alert('Gagal menyimpan: '+e.message);}
     };
   }
