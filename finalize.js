@@ -5,8 +5,6 @@
 
   async function getTasksView(){
     if(ADMIN_ROLES.includes(USER?.role)){
-      // Jangan gunakan request(): request() otomatis menambahkan username.
-      // Untuk admin/supervisor kita memang ingin seluruh penugasan.
       const q=new URLSearchParams({action:'getTasks',v:(typeof APP_VERSION!=='undefined'?APP_VERSION:'8.0.1')});
       const r=await fetch(API+'?'+q.toString(),{cache:'no-store',redirect:'follow'});
       const txt=await r.text();
@@ -23,15 +21,9 @@
   window.downloadBA=async function(task){
     try{
       const ba=await getBA(task);
-      if(ba&&ba.pdfUrl){
-        window.open(ba.pdfUrl,'_blank','noopener');
-        return;
-      }
-      if(ba){
-        alert('Berita Acara sudah ada, tetapi PDF belum dibuat. Buka Berita Acara lalu simpan kembali untuk membuat PDF.');
-      }else{
-        alert('Belum ada Berita Acara untuk penugasan ini.');
-      }
+      if(ba&&ba.pdfUrl){window.open(ba.pdfUrl,'_blank','noopener');return;}
+      if(ba) alert('Berita Acara sudah ada, tetapi PDF belum dibuat. Buka Berita Acara lalu simpan kembali untuk membuat PDF.');
+      else alert('Belum ada Berita Acara untuk penugasan ini.');
     }catch(e){alert('Gagal mengambil PDF BA: '+(e.message||e));}
   };
 
@@ -62,29 +54,24 @@
       try{
         const r=await request('updateTaskStatus',{method:'POST',body:{id:t.id,status:'SELESAI'}});
         if(!r?.ok)throw Error(r?.error||'Gagal memperbarui tugas');
-        closeModal();await loadTasks();alert('Penugasan berhasil ditandai SELESAI.');
-      }catch(e){alert(e.message||e)}
+        closeModal();await window.loadTasks();alert('Penugasan berhasil ditandai SELESAI.');
+      }catch(e){alert(e.message||e);}
     };
-    const baBtn=$('taskBA'); if(baBtn)baBtn.onclick=()=>{closeModal();openBeritaAcara(t);};
-    const pdfBtn=$('taskPDF'); if(pdfBtn)pdfBtn.onclick=()=>downloadBA(t);
+    const baBtn=$('taskBA');if(baBtn)baBtn.onclick=()=>{closeModal();openBeritaAcara(t);};
+    const pdfBtn=$('taskPDF');if(pdfBtn)pdfBtn.onclick=()=>downloadBA(t);
 
     getBA(t).then(ba=>{
-      const info=$('baInfo');
-      if(!info)return;
-      if(ba&&ba.pdfUrl){
-        info.innerHTML='<b>📄 PDF BA tersedia</b><br><a class="primary" href="'+E(ba.pdfUrl)+'" target="_blank" rel="noopener">⬇ Buka / Download PDF</a><div class="meta">Nomor BA: '+E(ba.nomorBA||'-')+' · Status: '+E(ba.statusBA||'-')+'</div>';
-      }else if(ba){
-        info.innerHTML='<b>📝 Berita Acara tersedia</b><br>PDF belum tersedia.';
-      }else{
-        info.innerHTML='<span class="muted">Belum ada Berita Acara.</span>';
-      }
+      const info=$('baInfo');if(!info)return;
+      if(ba&&ba.pdfUrl)info.innerHTML='<b>📄 PDF BA tersedia</b><br><a class="primary" href="'+E(ba.pdfUrl)+'" target="_blank" rel="noopener">⬇ Buka / Download PDF</a><div class="meta">Nomor BA: '+E(ba.nomorBA||'-')+' · Status: '+E(ba.statusBA||'-')+'</div>';
+      else if(ba)info.innerHTML='<b>📝 Berita Acara tersedia</b><br>PDF belum tersedia.';
+      else info.innerHTML='<span class="muted">Belum ada Berita Acara.</span>';
     }).catch(()=>{const info=$('baInfo');if(info)info.innerHTML='<span class="muted">Belum dapat memeriksa BA.</span>';});
   };
 
   window.loadTasks=async function(){
     $('tasksView').innerHTML=`<div class="toolbar">${ADMIN_ROLES.includes(USER?.role)?'<button id="newTaskBtn" class="primary">+ Penugasan Baru</button>':''}<button id="refreshTasks" class="secondary">↻</button></div><div id="taskList">Memuat...</div>`;
     if($('newTaskBtn'))$('newTaskBtn').onclick=newTask;
-    $('refreshTasks').onclick=loadTasks;
+    $('refreshTasks').onclick=()=>window.loadTasks();
     try{
       const r=await getTasksView();
       if(!r||!r.ok)throw Error(r?.error||'Gagal mengambil penugasan.');
@@ -105,29 +92,38 @@
 
       document.querySelectorAll('[data-task]').forEach(el=>{
         const t=tasks.find(x=>String(x.id)===String(el.dataset.task));
-        el.onclick=e=>{if(e.target.closest('button'))return;openTask(t);};
+        el.onclick=e=>{if(e.target.closest('button'))return;window.openTask(t);};
         const f=el.querySelector('.taskFinishInline');
-        if(f)f.onclick=async e=>{e.stopPropagation();if(!confirm('Tandai penugasan sebagai SELESAI?'))return;try{const z=await request('updateTaskStatus',{method:'POST',body:{id:t.id,status:'SELESAI'}});if(!z?.ok)throw Error(z?.error||'Gagal');await loadTasks();}catch(err){alert(err.message)}};
+        if(f)f.onclick=async e=>{e.stopPropagation();if(!confirm('Tandai penugasan sebagai SELESAI?'))return;try{const z=await request('updateTaskStatus',{method:'POST',body:{id:t.id,status:'SELESAI'}});if(!z?.ok)throw Error(z?.error||'Gagal');await window.loadTasks();}catch(err){alert(err.message);}};
         const b=el.querySelector('.taskBAInline');if(b)b.onclick=e=>{e.stopPropagation();openBeritaAcara(t);};
-        const p=el.querySelector('.taskPDFInline');if(p)p.onclick=e=>{e.stopPropagation();downloadBA(t);};
+        const p=el.querySelector('.taskPDFInline');if(p)p.onclick=e=>{e.stopPropagation();window.downloadBA(t);};
       });
     }catch(e){$('taskList').innerHTML='<div class="alert danger">'+E(e.message||e)+'</div>';}
   };
 
-  // Monitor penugasan pada menu Administrasi.
   window.loadAdminTasks=async function(){
     try{
       const r=await getTasksView();
       if(!r||!r.ok)throw Error(r?.error||'Gagal mengambil penugasan.');
       const a=r.data||[];
-      const total=a.length, open=a.filter(x=>String(x.status||'').toUpperCase()==='TERBUKA').length, done=a.filter(x=>String(x.status||'').toUpperCase()==='SELESAI').length, process=a.filter(x=>String(x.status||'').toUpperCase()==='DIPROSES').length;
+      const total=a.length,open=a.filter(x=>String(x.status||'').toUpperCase()==='TERBUKA').length,done=a.filter(x=>String(x.status||'').toUpperCase()==='SELESAI').length,process=a.filter(x=>String(x.status||'').toUpperCase()==='DIPROSES').length;
       $('adminTaskList').innerHTML=`<div class="grid"><div class="stat"><small>Total</small><b>${total}</b></div><div class="stat"><small>Terbuka</small><b>${open}</b></div><div class="stat"><small>Diproses</small><b>${process}</b></div><div class="stat"><small>Selesai</small><b>${done}</b></div></div><div class="toolbar"><button id="adminRefreshTasks" class="secondary">↻ Refresh</button></div>`+
         (a.map(t=>`<div class="meter-card"><div class="meter-head"><div><b>${E(t.nomorMeter||'-')}</b><div>${E(t.judul||'-')}</div><small>Petugas: ${E(t.petugas||t.assignee||'-')} · Dibuat oleh: ${E(t.createdBy||'-')}</small></div><b class="badge">${E(t.status||'TERBUKA')}</b></div><div class="meta">Jatuh tempo: ${E(t.jatuhTempo||t.dueDate||'-')}</div><div class="actions"><button class="secondary adminBA" data-id="${E(t.id)}">📄 BA</button><button class="secondary adminPDF" data-id="${E(t.id)}">⬇ PDF BA</button></div></div>`).join('')||'<div class="empty">Belum ada penugasan.</div>');
-      $('adminRefreshTasks').onclick=loadAdminTasks;
+      $('adminRefreshTasks').onclick=()=>window.loadAdminTasks();
       document.querySelectorAll('.adminBA').forEach(b=>b.onclick=()=>{const t=a.find(x=>String(x.id)===String(b.dataset.id));if(t)openBeritaAcara(t);});
-      document.querySelectorAll('.adminPDF').forEach(b=>b.onclick=()=>{const t=a.find(x=>String(x.id)===String(b.dataset.id));if(t)downloadBA(t);});
+      document.querySelectorAll('.adminPDF').forEach(b=>b.onclick=()=>{const t=a.find(x=>String(x.id)===String(b.dataset.id));if(t)window.downloadBA(t);});
     }catch(e){$('adminTaskList').innerHTML='<div class="alert danger">'+E(e.message||e)+'</div>';}
   };
 
-  if(document.readyState==='loading')document.addEventListener('DOMContentLoaded',install);else install();
+  // app.js mendefinisikan fungsi global dengan nama yang sama. Rebind agar navigate()
+  // dan renderAdminTasks() memakai patch ini, bukan implementasi lama.
+  try{ loadTasks=window.loadTasks; }catch(_){ }
+  try{ loadAdminTasks=window.loadAdminTasks; }catch(_){ }
+
+  if(document.readyState==='loading'){
+    document.addEventListener('DOMContentLoaded',()=>{
+      try{ loadTasks=window.loadTasks; }catch(_){ }
+      try{ loadAdminTasks=window.loadAdminTasks; }catch(_){ }
+    });
+  }
 })();
