@@ -1,11 +1,7 @@
 /* RIMPU/SIMETER - aktivitas terbaru dapat disentuh untuk melihat detail */
 (function () {
   const escSafe = v => String(v == null ? "" : v).replace(/[&<>"']/g, c => ({"&":"&amp;","<":"&lt;",">":"&gt;","\"":"&quot;","'":"&#39;"}[c]));
-  function val(x, keys, index) {
-    if (Array.isArray(x) && index != null && x[index] != null && String(x[index]).trim() !== "") return x[index];
-    if (x && !Array.isArray(x)) for (const k of keys) if (x[k] != null && String(x[k]).trim() !== "") return x[k];
-    return "-";
-  }
+  function val(x, keys, index) { if (Array.isArray(x) && index != null && x[index] != null && String(x[index]).trim() !== "") return x[index]; if (x && !Array.isArray(x)) for (const k of keys) if (x[k] != null && String(x[k]).trim() !== "") return x[k]; return "-"; }
   function row(label, value) { return `<div class="kv"><small>${escSafe(label)}</small><b>${escSafe(value)}</b></div>`; }
   function openDetail(x) {
     if (!x || typeof window.showModal !== "function") return;
@@ -14,23 +10,15 @@
     window.showModal(`<h2>Detail Aktivitas</h2><div class="activity-detail-title"><b>${escSafe(jenis)}</b><span>${escSafe(tanggal)}</span></div><div class="details-grid">${row("Nomor Meter",nomor)}${row("ID Pelanggan",idPel)}${row("Jenis Kegiatan",jenis)}${row("Kondisi / Hasil",kondisi)}${row("Petugas",petugas)}${row("Stand LWBP",lwbp)}${row("Stand WBP",wbp)}${row("Stand KVARH",kvarh)}${row("Stand KWH TOTAL",kwh)}${row("Tanggal / Waktu",tanggal)}${row("Latitude",lat)}${row("Longitude",lng)}${row("Akurasi GPS",accuracy)}</div><div class="activity-note"><small>Keterangan</small><div>${escSafe(keterangan)}</div></div>${photo}`);
   }
   async function getHistory() {
-    const api=localStorage.getItem("simeter_api_url")||"";
-    if(!api) throw new Error("URL API belum tersedia.");
+    const api=localStorage.getItem("simeter_api_url")||""; if(!api) throw new Error("URL API belum tersedia.");
     let user={}; try{user=JSON.parse(localStorage.getItem("simeter_user")||"{}")}catch(_){ }
-    const qs=new URLSearchParams({action:"getHistory",v:"8.0.1"});
-    if(user.username)qs.set("username",user.username); if(user.role)qs.set("role",user.role);
-    const r=await fetch(api.replace(/\/+$/,'')+"?"+qs.toString(),{cache:"no-store",redirect:"follow"});
-    const t=await r.text(); let data; try{data=JSON.parse(t)}catch(_){throw new Error("Respons riwayat bukan JSON.")}
-    if(!data||!data.ok)throw new Error(data?.error||"Gagal mengambil riwayat aktivitas.");
-    return Array.isArray(data.data)?data.data:(Array.isArray(data.rows)?data.rows:[]);
+    const qs=new URLSearchParams({action:"getHistory",v:"8.0.1"}); if(user.username)qs.set("username",user.username); if(user.role)qs.set("role",user.role);
+    const r=await fetch(api.replace(/\/+$/,'')+"?"+qs.toString(),{cache:"no-store",redirect:"follow"}),t=await r.text(); let data; try{data=JSON.parse(t)}catch(_){throw new Error("Respons riwayat bukan JSON.")}
+    if(!data||!data.ok)throw new Error(data?.error||"Gagal mengambil riwayat aktivitas."); return Array.isArray(data.data)?data.data:(Array.isArray(data.rows)?data.rows:[]);
   }
-  async function show(card,index){
-    card.classList.add("activity-loading");
-    try{const h=await getHistory();if(h[index])openDetail(h[index]);else openDetail({nomorMeter:card.querySelector("b")?.textContent||"-",jenis:card.querySelector("div")?.textContent||"-"})}
-    catch(err){window.showModal(`<h2>Detail Aktivitas</h2><div class="alert danger">${escSafe(err.message)}</div>`)}
-    finally{card.classList.remove("activity-loading")}
-  }
+  async function show(card,index) { card.classList.add("activity-loading"); try{const h=await getHistory();if(h[index])openDetail(h[index]);else openDetail({nomorMeter:card.querySelector("b")?.textContent||"-",jenis:card.querySelector("div")?.textContent||"-"})}catch(err){window.showModal(`<h2>Detail Aktivitas</h2><div class="alert danger">${escSafe(err.message)}</div>`)}finally{card.classList.remove("activity-loading")} }
   function init(){
+    const style=document.createElement("style");style.textContent="#recent > .meter-card{cursor:pointer;transition:transform .18s,box-shadow .18s}#recent > .meter-card:hover{transform:translateY(-2px);box-shadow:0 14px 32px rgba(24,55,96,.14)}#recent > .meter-card:focus{outline:2px solid #1769e0;outline-offset:2px}.activity-loading{opacity:.65;pointer-events:none}.activity-detail-title{display:flex;justify-content:space-between;gap:12px;align-items:center;margin:0 0 16px;padding:12px 14px;background:#f5f8fd;border-radius:14px}.activity-detail-title span{font-size:12px;color:#718096}.activity-note{margin-top:16px;padding:14px;border:1px solid #e5ebf4;border-radius:14px;background:#fbfcfe}.activity-note small,.activity-photo small{display:block;font-weight:700;color:#718096;margin-bottom:6px}.activity-photo{margin-top:16px}.activity-photo img{display:block;width:100%;max-height:360px;object-fit:contain;border-radius:14px;border:1px solid #e5ebf4}";document.head.appendChild(style);
     document.addEventListener("click",e=>{const card=e.target.closest("#recent > .meter-card");if(!card||e.target.closest("button"))return;const index=Array.from(document.querySelectorAll("#recent > .meter-card")).indexOf(card);if(index>=0)show(card,index)});
     document.addEventListener("keydown",e=>{if(e.key!=="Enter"&&e.key!==" ")return;const card=e.target.closest&&e.target.closest("#recent > .meter-card");if(card){e.preventDefault();card.click()}});
   }
