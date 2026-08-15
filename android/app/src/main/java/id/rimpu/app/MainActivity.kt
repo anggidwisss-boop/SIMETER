@@ -19,12 +19,12 @@ import android.webkit.WebSettings
 import android.webkit.WebView
 import android.webkit.WebViewClient
 import android.widget.Toast
+import androidx.activity.ComponentActivity
 import androidx.activity.OnBackPressedCallback
 import androidx.activity.result.contract.ActivityResultContracts
-import androidx.appcompat.app.AppCompatActivity
 import androidx.core.content.ContextCompat
 
-class MainActivity : AppCompatActivity() {
+class MainActivity : ComponentActivity() {
     private lateinit var webView: WebView
     private var geoCallback: GeolocationPermissions.Callback? = null
     private var geoOrigin: String? = null
@@ -60,7 +60,6 @@ class MainActivity : AppCompatActivity() {
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         setContentView(R.layout.activity_main)
-
         webView = findViewById(R.id.webView)
         configureWebView()
         webView.loadUrl("https://anggidwisss-boop.github.io/SIMETER/")
@@ -75,7 +74,6 @@ class MainActivity : AppCompatActivity() {
     private fun configureWebView() {
         CookieManager.getInstance().setAcceptCookie(true)
         CookieManager.getInstance().setAcceptThirdPartyCookies(webView, true)
-
         webView.settings.apply {
             javaScriptEnabled = true
             domStorageEnabled = true
@@ -87,19 +85,15 @@ class MainActivity : AppCompatActivity() {
             cacheMode = WebSettings.LOAD_DEFAULT
             userAgentString = "$userAgentString RIMPU-Android/1.0"
         }
-
         webView.webViewClient = object : WebViewClient() {
             override fun shouldOverrideUrlLoading(view: WebView, request: WebResourceRequest): Boolean {
                 val url = request.url.toString()
-                return if (url.startsWith("https://") || url.startsWith("http://")) {
-                    false
-                } else {
+                return if (url.startsWith("https://") || url.startsWith("http://")) false else {
                     try { startActivity(Intent(Intent.ACTION_VIEW, request.url)) } catch (_: Exception) {}
                     true
                 }
             }
         }
-
         webView.webChromeClient = object : WebChromeClient() {
             override fun onPermissionRequest(request: PermissionRequest) {
                 runOnUiThread {
@@ -110,29 +104,17 @@ class MainActivity : AppCompatActivity() {
                     if (resources.isNotEmpty()) request.grant(resources)
                 }
             }
-
-            override fun onGeolocationPermissionsShowPrompt(
-                origin: String,
-                callback: GeolocationPermissions.Callback
-            ) {
+            override fun onGeolocationPermissionsShowPrompt(origin: String, callback: GeolocationPermissions.Callback) {
                 if (ContextCompat.checkSelfPermission(this@MainActivity, Manifest.permission.ACCESS_FINE_LOCATION) == PackageManager.PERMISSION_GRANTED ||
                     ContextCompat.checkSelfPermission(this@MainActivity, Manifest.permission.ACCESS_COARSE_LOCATION) == PackageManager.PERMISSION_GRANTED) {
                     callback.invoke(origin, true, false)
                 } else {
                     geoOrigin = origin
                     geoCallback = callback
-                    permissionLauncher.launch(arrayOf(
-                        Manifest.permission.ACCESS_FINE_LOCATION,
-                        Manifest.permission.ACCESS_COARSE_LOCATION
-                    ))
+                    permissionLauncher.launch(arrayOf(Manifest.permission.ACCESS_FINE_LOCATION, Manifest.permission.ACCESS_COARSE_LOCATION))
                 }
             }
-
-            override fun onShowFileChooser(
-                webView: WebView,
-                filePathCallback: ValueCallback<Array<Uri>>,
-                fileChooserParams: FileChooserParams
-            ): Boolean {
+            override fun onShowFileChooser(webView: WebView, filePathCallback: ValueCallback<Array<Uri>>, fileChooserParams: FileChooserParams): Boolean {
                 fileCallback?.onReceiveValue(null)
                 fileCallback = filePathCallback
                 val intent = Intent(Intent.ACTION_OPEN_DOCUMENT).apply {
@@ -144,19 +126,19 @@ class MainActivity : AppCompatActivity() {
                 return true
             }
         }
-
         webView.setDownloadListener { url, userAgent, contentDisposition, mimeType, _ ->
             try {
+                val filename = URLUtil.guessFileName(url, contentDisposition, mimeType)
                 val request = DownloadManager.Request(Uri.parse(url))
                     .setMimeType(mimeType)
-                    .setTitle(URLUtil.guessFileName(url, contentDisposition, mimeType))
+                    .setTitle(filename)
                     .setDescription("RIMPU")
                     .addRequestHeader("User-Agent", userAgent)
                     .setNotificationVisibility(DownloadManager.Request.VISIBILITY_VISIBLE_NOTIFY_COMPLETED)
-                    .setDestinationInExternalPublicDir(Environment.DIRECTORY_DOWNLOADS, URLUtil.guessFileName(url, contentDisposition, mimeType))
+                    .setDestinationInExternalPublicDir(Environment.DIRECTORY_DOWNLOADS, filename)
                 (getSystemService(Context.DOWNLOAD_SERVICE) as DownloadManager).enqueue(request)
                 Toast.makeText(this, "File diunduh ke folder Download", Toast.LENGTH_SHORT).show()
-            } catch (e: Exception) {
+            } catch (_: Exception) {
                 Toast.makeText(this, "Gagal mengunduh file", Toast.LENGTH_SHORT).show()
             }
         }
