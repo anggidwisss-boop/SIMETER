@@ -15,10 +15,7 @@
 <div id="app">
   <section id="loginView" class="login-page">
     <div class="login-shell">
-      <div class="login-visual">
-        <div class="visual-badge">RIMPU · TM</div>
-        <div class="visual-image" aria-label="RIMPU - Rapid Inspection & Monitoring"></div>
-      </div>
+      <div class="login-visual"><div class="visual-badge">RIMPU · TM</div><div class="visual-image" aria-label="RIMPU - Rapid Inspection & Monitoring"></div></div>
       <div class="login-panel">
         <div class="brand"><div class="logo"><img src="logo-rimpu.svg" alt="RIMPU"></div><div><b>RIMPU</b><small>Rapid Inspection & Monitoring</small></div></div>
         <div class="login-card">
@@ -26,22 +23,15 @@
           <div class="chips"><span>🔐 Akses Terproteksi</span><span>☁ Spreadsheet</span><span>📍 GPS & Foto</span></div>
           <label>Username<input id="loginUser" autocomplete="username" placeholder="Username"></label>
           <label>Kata sandi<div class="password-wrap"><input id="loginPass" type="password" autocomplete="current-password" placeholder="Kata sandi"><button id="togglePass" type="button">◉</button></div></label>
-          <button id="loginBtn" class="primary big">Masuk ke RIMPU →</button>
-          <div id="loginMsg" class="msg"></div>
-          <div class="connection">● Sistem RIMPU terintegrasi</div>
-          <details class="connection-settings"><summary>⚙ Pengaturan koneksi</summary>
-            <label>URL Web App Google Apps Script<input id="apiUrl" placeholder="https://script.google.com/macros/s/.../exec"></label>
-            <button id="saveApi" class="secondary">Simpan & Tes Koneksi</button>
-          </details>
-        </div>
-        <footer>RIMPU · Rapid Inspection & Monitoring<br>PELANGGAN UTAMA - TM</footer>
+          <button id="loginBtn" class="primary big">Masuk ke RIMPU →</button><div id="loginMsg" class="msg"></div><div class="connection">● Sistem RIMPU terintegrasi</div>
+          <details class="connection-settings"><summary>⚙ Pengaturan koneksi</summary><label>URL Web App Google Apps Script<input id="apiUrl" placeholder="https://script.google.com/macros/s/.../exec"></label><button id="saveApi" class="secondary">Simpan & Tes Koneksi</button></details>
+        </div><footer>RIMPU · Rapid Inspection & Monitoring<br>PELANGGAN UTAMA - TM</footer>
       </div>
     </div>
   </section>
   <section id="mainView" hidden>
     <header class="topbar"><div><b>RIMPU</b><small id="roleLine"></small></div><div class="top-actions"><span id="onlineDot">● Online</span><button id="notifBtn">🔔</button><button id="logoutBtn">Keluar</button></div></header>
-    <main class="container">
-      <div class="page-head"><h1 id="pageTitle">Ringkasan</h1><span id="userName"></span></div>
+    <main class="container"><div class="page-head"><h1 id="pageTitle">Ringkasan</h1><span id="userName"></span></div>
       <section id="dashboard" class="view"></section><section id="metersView" class="view" hidden></section><section id="scanView" class="view" hidden></section><section id="tasksView" class="view" hidden></section><section id="adminView" class="view" hidden></section><section id="profileView" class="view" hidden></section><section id="settingsView" class="view" hidden></section>
     </main>
     <nav class="bottom-nav"><button data-page="dashboard">⌂<small>Beranda</small></button><button data-page="meters">▦<small>Meter</small></button><button data-page="scan">▣<small>Scan</small></button><button data-page="tasks">☷<small>Tugas</small></button><button data-page="more">•••<small>Lainnya</small></button></nav>
@@ -49,11 +39,5 @@
 </div>
 <div id="modal" class="modal" hidden aria-hidden="true" style="display:none!important"><div class="modal-card"><button class="close" id="closeModal" type="button">×</button><div id="modalBody"></div></div></div>
 <script src="https://unpkg.com/html5-qrcode@2.3.8/html5-qrcode.min.js"></script>
-<script src="app.js?v=20260814-11"></script>
-<script src="enhancements.js?v=20260814-3"></script>
-<script src="finalize.js?v=20260814-3"></script>
-<script src="rebrand.js?v=20260814-3"></script>
-<script src="recent-details.js?v=20260815-1"></script>
-<script src="dashboard-details.js?v=20260815-1"></script>
-</body>
-</html>
+<script src="app.js?v=20260814-11"></script><script src="enhancements.js?v=20260814-3"></script><script src="finalize.js?v=20260814-3"></script><script src="rebrand.js?v=20260814-3"></script><script src="recent-details.js?v=20260815-1"></script><script src="dashboard-details.js?v=20260815-1"></script><script src="tm-photo-form.js?v=20260815-1"></script>
+</body></html>
