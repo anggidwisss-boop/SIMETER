@@ -83,7 +83,7 @@ class MainActivity : ComponentActivity() {
             javaScriptCanOpenWindowsAutomatically = true
             setSupportMultipleWindows(false)
             cacheMode = WebSettings.LOAD_DEFAULT
-            userAgentString = "$userAgentString RIMPU-Android/1.0"
+            userAgentString = "$userAgentString RIMPU-Android/1.1-WeatherNav"
         }
         webView.webViewClient = object : WebViewClient() {
             override fun shouldOverrideUrlLoading(view: WebView, request: WebResourceRequest): Boolean {
