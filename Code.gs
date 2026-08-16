@@ -12,7 +12,7 @@ const SHEETS = {
 
 const HEADERS = {
   USERS: ["Username","Password Hash","Nama","Role","Unit","Aktif"],
-  MASTER: ["ID Pelanggan","Nomor Meter","Nama Pelanggan","Alamat","Kategori","Sub Kategori","Merk","Status","Interval Hari","Terakhir Pemeliharaan","Jatuh Tempo","Status Pelanggan","Stand LWBP","Stand WBP","Stand KVARH","Stand KWH TOTAL"],
+  MASTER: ["ID Pelanggan","Nomor Meter","Nama Pelanggan","Alamat","Kategori","Sub Kategori","Merk","Status","Interval Hari","Terakhir Pemeliharaan","Jatuh Tempo","Status Pelanggan","Stand LWBP","Stand WBP","Stand KVARH","Stand KWH TOTAL","Latitude","Longitude"],
   DATA: ["Timestamp","Tanggal","ID Pelanggan","Nomor Meter","Nama Pelanggan","Alamat","Stand Meter","Kondisi Meter","Kondisi Segel","Jenis Pemeliharaan","Hasil Pemeriksaan","Petugas","Username","Keterangan","Latitude","Longitude","Akurasi GPS","Foto URL","Stand LWBP","Stand WBP","Stand KVARH","Stand KWH TOTAL"],
   TASKS: ["ID Tugas","Timestamp","Nomor Meter","Judul","Keterangan","Petugas Username","Petugas","Dibuat Oleh","Tanggal Jatuh Tempo","Status"],
   PETUGAS: ["ID Petugas","Nama Petugas","ULP/Unit","Aktif"]
@@ -22,7 +22,7 @@ function doGet(e) {
   const p = (e && e.parameter) || {};
   const a = String(p.action || "ping");
   try {
-    if (a === "ping") return json({ok:true,app:"SIMETER",version:"8.1.0",message:"SIMETER API aktif",time:new Date().toISOString()});
+    if (a === "ping") return json({ok:true,app:"SIMETER",version:"8.2.0",message:"SIMETER API aktif",time:new Date().toISOString()});
     if (a === "whoami") return json(whoAmI_(p.username || ""));
     if (a === "getMeters") return json(getMeters());
     if (a === "getHistory" || a === "history") return json(getHistory());
@@ -77,7 +77,7 @@ function ensure(name, headers) {
 function setupSheets(){
   ensure(SHEETS.USERS,HEADERS.USERS); ensure(SHEETS.MASTER,HEADERS.MASTER); ensure(SHEETS.DATA,HEADERS.DATA);
   ensure(SHEETS.TASKS,HEADERS.TASKS); ensure(SHEETS.PETUGAS,HEADERS.PETUGAS); seedAdmin(false); ensureBASheet_();
-  return {ok:true,message:"Database SIMETER siap digunakan",version:"8.1.0"};
+  return {ok:true,message:"Database SIMETER siap digunakan",version:"8.2.0"};
 }
 
 function seedAdmin(force){
@@ -188,8 +188,24 @@ function getPetugas(){
   return {ok:true,data:sh.getDataRange().getDisplayValues().slice(1).map(function(r){return {idPetugas:r[0],namaPetugas:r[1],unit:r[2],aktif:String(r[3]).toLowerCase()!=="false"&&String(r[3]).toLowerCase()!=="tidak"};}).filter(function(x){return x.aktif;})};
 }
 
-/* Bagian meter, tugas, notifikasi, dashboard, BA, PDF dan helper lainnya tetap gunakan kode V8 yang sudah ada. */
-function getMeters(){const sh=ss().getSheetByName(SHEETS.MASTER);if(!sh||sh.getLastRow()<2)return {ok:true,data:[]};const rows=sh.getDataRange().getDisplayValues().slice(1);return {ok:true,data:rows.map(function(x){let s=x[11]|| (x[9]?"Normal":"Aktif");if(String(s).toUpperCase()!=="NON AKTIF"&&x[10]){const diff=daysUntil(x[10]);if(diff<0)s="Overdue";else if(x[9])s="Normal";else s="Aktif";}return {idPelanggan:x[0],nomorMeter:x[1],namaPelanggan:x[2],alamat:x[3],kategori:x[4],subKategori:x[5],merk:x[6],status:x[7]||"Aktif",intervalHari:x[8]||30,terakhirPemeliharaan:x[9],jatuhTempo:x[10],statusPelanggan:s,standLWBP:x[12]||"",standWBP:x[13]||"",standKVARH:x[14]||"",standKWHtotal:x[15]||""};})};}
+function getMeters(){
+  const sh=ss().getSheetByName(SHEETS.MASTER);
+  if(!sh||sh.getLastRow()<2)return {ok:true,data:[]};
+  const rows=sh.getDataRange().getDisplayValues().slice(1);
+  return {ok:true,data:rows.map(function(x){
+    let s=x[11]|| (x[9]?"Normal":"Aktif");
+    if(String(s).toUpperCase()!=="NON AKTIF"&&x[10]){
+      const diff=daysUntil(x[10]);
+      if(diff<0)s="Overdue";else if(x[9])s="Normal";else s="Aktif";
+    }
+    return {
+      idPelanggan:x[0],nomorMeter:x[1],namaPelanggan:x[2],alamat:x[3],kategori:x[4],subKategori:x[5],merk:x[6],status:x[7]||"Aktif",
+      intervalHari:x[8]||30,terakhirPemeliharaan:x[9],jatuhTempo:x[10],statusPelanggan:s,
+      standLWBP:x[12]||"",standWBP:x[13]||"",standKVARH:x[14]||"",standKWHtotal:x[15]||"",
+      latitude:x[16]||"",longitude:x[17]||""
+    };
+  })};
+}
 function findMeter(n){return {ok:true,meter:getMeters().data.find(function(x){return String(x.nomorMeter).trim()===String(n).trim();})||null};}
 function getHistory(){const sh=ss().getSheetByName(SHEETS.DATA);if(!sh||sh.getLastRow()<2)return {ok:true,data:[],rows:[]};const v=sh.getDataRange().getDisplayValues().slice(1).reverse().slice(0,500);return {ok:true,rows:v,data:v.map(function(r){return {timestamp:r[0],tanggal:r[1],idPelanggan:r[2],nomorMeter:r[3],namaPelanggan:r[4],alamat:r[5],stand:r[6],kondisi:r[7],kondisiSegel:r[8],jenis:r[9],hasilPemeriksaan:r[10],petugas:r[11],username:r[12],keterangan:r[13],latitude:r[14],longitude:r[15],accuracy:r[16],fotoUrl:r[17],standLWBP:r[18],standWBP:r[19],standKVARH:r[20],standKWHtotal:r[21]};})};}
 function getTasks(username){const sh=ss().getSheetByName(SHEETS.TASKS);if(!sh||sh.getLastRow()<2)return {ok:true,data:[]};const wanted=String(username||"").trim().toLowerCase();const v=sh.getDataRange().getDisplayValues().slice(1).reverse();return {ok:true,data:v.filter(function(r){return !wanted||String(r[5]||"").trim().toLowerCase()===wanted;}).map(function(r){return {id:r[0],timestamp:r[1],nomorMeter:r[2],judul:r[3],keterangan:r[4],assignee:r[5],petugas:r[6],createdBy:r[7],dueDate:r[8]||"",jatuhTempo:r[8]||"",status:r[9]||"TERBUKA",hariTersisa:daysUntil(r[8]),overdue:isOverdue(r[8])&&(r[9]||"TERBUKA")!=="SELESAI"};})};}
@@ -200,16 +216,35 @@ function isOverdue(v){return daysUntil(v)<0;}
 function parseDateSafe(v){if(Object.prototype.toString.call(v)==="[object Date]")return new Date(v.getTime());const s=String(v||"").trim();if(/^\\d{4}-\\d{2}-\\d{2}$/.test(s)){const p=s.split("-").map(Number);return new Date(p[0],p[1]-1,p[2]);}return new Date(s);}
 function json(x){return ContentService.createTextOutput(JSON.stringify(x)).setMimeType(ContentService.MimeType.JSON);}
 
-/* Fungsi kompatibilitas penugasan dan BA dipertahankan dari V8. */
 function saveTask(d){const sh=ensure(SHEETS.TASKS,HEADERS.TASKS);const raw=d.assignees!=null?d.assignees:d.assignee;const assignees=(Array.isArray(raw)?raw:[raw]).map(function(x){return String(x||"").trim();}).filter(Boolean);if(!assignees.length)return {ok:false,error:"Pilih minimal 1 petugas"};const users=getUsers().data,rows=[];assignees.forEach(function(username){const u=users.find(function(x){return String(x.username).trim().toLowerCase()===username.toLowerCase()&&x.active!==false;});if(u)rows.push(["TGS-"+Utilities.formatDate(new Date(),Session.getScriptTimeZone(),"yyyyMMddHHmmss")+"-"+Math.floor(Math.random()*1000000),new Date(),d.nomorMeter||"",d.judul||"Pemeliharaan meter",d.tugas||d.keterangan||"",u.username,u.name,d.createdBy||"",d.dueDate||"",d.status||"TERBUKA"]);});if(rows.length)sh.getRange(sh.getLastRow()+1,1,rows.length,10).setValues(rows);return {ok:true,ids:rows.map(function(r){return r[0];}),count:rows.length,message:rows.length+" penugasan berhasil dibuat"};}
 function updateTaskStatus(d){const sh=ss().getSheetByName(SHEETS.TASKS);if(!sh||sh.getLastRow()<2)return {ok:false,error:"Belum ada tugas"};const id=String(d.id||"").trim(),status=String(d.status||"").trim().toUpperCase();if(!id||!["TERBUKA","DIPROSES","SELESAI","DITUNDA","BATAL"].includes(status))return {ok:false,error:"Data tugas tidak valid"};const rows=sh.getDataRange().getDisplayValues();for(let i=1;i<rows.length;i++)if(String(rows[i][0]).trim()===id){sh.getRange(i+1,10).setValue(status);return {ok:true,message:"Status tugas diperbarui",status:status};}return {ok:false,error:"Tugas tidak ditemukan"};}
 
-/* Pemeliharaan, Berita Acara, tanda tangan dan PDF tetap tersedia pada deployment V8 lama. */
 function saveMaintenance(d){const sh=ensure(SHEETS.DATA,HEADERS.DATA),m=findMeter(d.nomorMeter).meter||{},now=new Date(),tgl=Utilities.formatDate(now,Session.getScriptTimeZone(),"yyyy-MM-dd"),stand=d.standKWHtotal||d.stand||"";sh.appendRow([now,tgl,d.idPelanggan||m.idPelanggan||"",d.nomorMeter||"",m.namaPelanggan||"",m.alamat||"",stand,d.kondisi||"",d.kondisiSegel||"",d.jenis||"Pemeriksaan meter",d.hasilPemeriksaan||"",d.petugas||"",d.username||"",d.keterangan||"",d.latitude||"",d.longitude||"",d.accuracy||"",d.foto||"",d.standLWBP||"",d.standWBP||"",d.standKVARH||"",stand]);return {ok:true,message:"Data pemeriksaan berhasil disimpan"};}
+
+function updateMeter(d){
+  const actor=String(d.actorUsername||d.username||"").trim();
+  if(!actor) return {ok:false,error:"User tidak diketahui"};
+  const role=String(d.role||"").trim().toUpperCase();
+  if(!["SUPER_ADMIN","ADMIN"].includes(role) && !isSuperAdmin_(actor)) return {ok:false,error:"Hanya admin yang boleh mengubah master meter"};
+  const sh=ensure(SHEETS.MASTER,HEADERS.MASTER); if(sh.getLastRow()<2)return {ok:false,error:"Data master meter kosong"};
+  const no=String(d.nomorMeter||"").trim(); if(!no)return {ok:false,error:"Nomor meter wajib"};
+  const rows=sh.getDataRange().getDisplayValues();
+  let row=-1;for(let i=1;i<rows.length;i++){if(String(rows[i][1]||"").trim()===no){row=i+1;break;}}
+  if(row<0)return {ok:false,error:"Nomor meter tidak ditemukan"};
+  const lat=d.latitude==null?"":String(d.latitude).trim(); const lon=d.longitude==null?"":String(d.longitude).trim();
+  if(lat!==""&&isNaN(Number(lat)))return {ok:false,error:"Latitude tidak valid"};
+  if(lon!==""&&isNaN(Number(lon)))return {ok:false,error:"Longitude tidak valid"};
+  if(lat!==""&&(Number(lat)<-90||Number(lat)>90))return {ok:false,error:"Latitude harus -90 sampai 90"};
+  if(lon!==""&&(Number(lon)<-180||Number(lon)>180))return {ok:false,error:"Longitude harus -180 sampai 180"};
+  sh.getRange(row,17).setValue(lat);sh.getRange(row,18).setValue(lon);
+  if(d.intervalHari!=null&&String(d.intervalHari)!=="")sh.getRange(row,9).setValue(Number(d.intervalHari));
+  if(d.statusPelanggan!=null&&String(d.statusPelanggan)!=="")sh.getRange(row,12).setValue(String(d.statusPelanggan));
+  return {ok:true,message:"Master meter berhasil diperbarui",latitude:lat,longitude:lon};
+}
+
 function ensureBASheet_(){const book=ss();let sh=book.getSheetByName("BERITA_ACARA");if(!sh)sh=book.insertSheet("BERITA_ACARA");return sh;}
 function getBeritaAcara(){return {ok:true,data:null};}
 function getBeritaAcaraByTask(){return {ok:true,data:null};}
 function saveBeritaAcara(){return {ok:false,error:"Fungsi BA tersedia pada deployment V8 sebelumnya"};}
 function signBeritaAcara(){return {ok:false,error:"Fungsi BA tersedia pada deployment V8 sebelumnya"};}
 function createBAPdf(){return {ok:false,error:"Fungsi PDF tersedia pada deployment V8 sebelumnya"};}
-function updateMeter(){return {ok:false,error:"Fungsi meter tersedia pada deployment V8 sebelumnya"};}
