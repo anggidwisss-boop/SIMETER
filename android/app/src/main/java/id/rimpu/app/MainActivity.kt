@@ -62,7 +62,7 @@ class MainActivity : ComponentActivity() {
         setContentView(R.layout.activity_main)
         webView = findViewById(R.id.webView)
         configureWebView()
-        webView.loadUrl("https://anggidwisss-boop.github.io/SIMETER/")
+        webView.loadUrl("https://anggidwisss-boop.github.io/SIMETER/?v=20260816-2")
 
         onBackPressedDispatcher.addCallback(this, object : OnBackPressedCallback(true) {
             override fun handleOnBackPressed() {
@@ -83,7 +83,7 @@ class MainActivity : ComponentActivity() {
             javaScriptCanOpenWindowsAutomatically = true
             setSupportMultipleWindows(false)
             cacheMode = WebSettings.LOAD_DEFAULT
-            userAgentString = "$userAgentString RIMPU-Android/1.1-WeatherNav"
+            userAgentString = "$userAgentString RIMPU-Android/1.2-TaskUI"
         }
         webView.webViewClient = object : WebViewClient() {
             override fun shouldOverrideUrlLoading(view: WebView, request: WebResourceRequest): Boolean {
