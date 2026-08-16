@@ -5,16 +5,18 @@
   var safety=function(code,prob,wind){code=Number(code||0);prob=Number(prob||0);wind=Number(wind||0);if(code>=95||prob>=80||wind>=45)return{c:'danger',t:'🔴 TIDAK DISARANKAN',n:'Periksa kembali kondisi keselamatan sebelum berangkat.'};if(prob>=50||wind>=30||code>=61)return{c:'warn',t:'🟡 WASPADA',n:'Siapkan perlengkapan hujan dan perhatikan kondisi lapangan.'};return{c:'ok',t:'🟢 CUKUP AMAN',n:'Kondisi cuaca relatif mendukung pekerjaan lapangan.'};};
   function meterNo(){var b=document.getElementById('modalBody');if(!b)return'';var all=b.querySelectorAll('.kv');for(var i=0;i<all.length;i++){var s=all[i].querySelector('small');if(s&&/Nomor Meter/i.test(s.textContent)){var x=all[i].querySelector('b');return x?x.textContent.trim():'';}}return'';}
   async function locationForTask(){
-    var no=meterNo(),ms=window.meters||[],m=ms.find(function(x){return String(x.nomorMeter)===String(no);})||{};
-    if(!ms.length){try{var mr=await request('getMeters');ms=mr.data||[];window.meters=ms;m=ms.find(function(x){return String(x.nomorMeter)===String(no);})||{};}catch(_) {}}
-    var hs=window.history||[];
-    if(!hs.length){try{var hr=await request('getHistory');hs=hr.data||hr.rows||[];window.history=hs;}catch(_) {}}
-    var cand=hs.filter(function(x){return String(x.nomorMeter||x[3]||'')===String(no)&&x.latitude&&x.longitude;});
+    var no=meterNo();
+    var ms=Array.isArray(window.meters)?window.meters:[];
+    var m=ms.find(function(x){return String(x.nomorMeter)===String(no);})||{};
+    if(!ms.length){try{var mr=await request('getMeters');ms=Array.isArray(mr.data)?mr.data:[];window.meters=ms;m=ms.find(function(x){return String(x.nomorMeter)===String(no);})||{};}catch(_) {}}
+    var taskHistory=Array.isArray(window.rimpuTaskHistory)?window.rimpuTaskHistory:[];
+    if(!taskHistory.length){try{var hr=await request('getHistory');taskHistory=Array.isArray(hr.data)?hr.data:(Array.isArray(hr.rows)?hr.rows:[]);window.rimpuTaskHistory=taskHistory;}catch(_) {}}
+    var cand=taskHistory.filter(function(x){return String(x.nomorMeter||x[3]||'')===String(no)&&x.latitude!=null&&x.longitude!=null;});
     var last=cand[cand.length-1];
     if(last)return{lat:Number(last.latitude),lon:Number(last.longitude),address:m.alamat||last.alamat||('Meter '+no)};
-    if(m.latitude&&m.longitude)return{lat:Number(m.latitude),lon:Number(m.longitude),address:m.alamat||('Meter '+no)};
+    if(m.latitude!=null&&m.longitude!=null)return{lat:Number(m.latitude),lon:Number(m.longitude),address:m.alamat||('Meter '+no)};
     var address=String(m.alamat||'').trim();
-    if(address){try{var u='https://geocoding-api.open-meteo.com/v1/search?name='+encodeURIComponent(address)+'&count=1&language=id&format=json';var r=await fetch(u);var j=await r.json();var z=j.results&&j.results[0];if(z)return{lat:Number(z.latitude),lon:Number(z.longitude),address:z.name||address};}catch(_) {}}
+    if(address){try{var u='https://geocoding-api.open-meteo.com/v1/search?name='+encodeURIComponent(address)+'&count=1&language=id&format=json';var r=await fetch(u,{cache:'no-store'});var j=await r.json();var z=j.results&&j.results[0];if(z)return{lat:Number(z.latitude),lon:Number(z.longitude),address:z.name||address};}catch(_) {}}
     return{lat:null,lon:null,address:address||('Meter '+no)};
   }
   function nav(loc){if(loc.lat!=null&&loc.lon!=null){window.location.href='geo:'+loc.lat+','+loc.lon+'?q='+loc.lat+','+loc.lon;}else if(loc.address){window.open('https://www.google.com/maps/search/?api=1&query='+encodeURIComponent(loc.address),'_blank');}else{alert('Lokasi pekerjaan belum tersedia.');}}
