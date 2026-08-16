@@ -62,7 +62,7 @@ class MainActivity : ComponentActivity() {
         setContentView(R.layout.activity_main)
         webView = findViewById(R.id.webView)
         configureWebView()
-        webView.loadUrl("https://anggidwisss-boop.github.io/SIMETER/?v=20260816-9")
+        webView.loadUrl("https://anggidwisss-boop.github.io/SIMETER/?v=20260816-10")
 
         onBackPressedDispatcher.addCallback(this, object : OnBackPressedCallback(true) {
             override fun handleOnBackPressed() {
@@ -83,12 +83,12 @@ class MainActivity : ComponentActivity() {
             javaScriptCanOpenWindowsAutomatically = true
             setSupportMultipleWindows(false)
             cacheMode = WebSettings.LOAD_NO_CACHE
-            userAgentString = "$userAgentString RIMPU-Android/1.0.5-WeatherFix2"
+            userAgentString = "$userAgentString RIMPU-Android/1.0.6-MasterCoord"
         }
         webView.webViewClient = object : WebViewClient() {
             override fun onPageFinished(view: WebView, url: String) {
                 super.onPageFinished(view, url)
-                view.evaluateJavascript("(function(){var s=document.createElement('script');s.src='https://anggidwisss-boop.github.io/SIMETER/task-weather-v2.js?v=20260816-3';document.body.appendChild(s);})();", null)
+                view.evaluateJavascript("(function(){var s=document.createElement('script');s.src='https://anggidwisss-boop.github.io/SIMETER/task-ui-fix.js?v=20260816-10';document.body.appendChild(s);})();", null)
             }
             override fun shouldOverrideUrlLoading(view: WebView, request: WebResourceRequest): Boolean {
                 val url = request.url.toString()
