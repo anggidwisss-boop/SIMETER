@@ -62,7 +62,7 @@ class MainActivity : ComponentActivity() {
         setContentView(R.layout.activity_main)
         webView = findViewById(R.id.webView)
         configureWebView()
-        webView.loadUrl("https://anggidwisss-boop.github.io/SIMETER/?v=20260816-6")
+        webView.loadUrl("https://anggidwisss-boop.github.io/SIMETER/?v=20260816-7")
 
         onBackPressedDispatcher.addCallback(this, object : OnBackPressedCallback(true) {
             override fun handleOnBackPressed() {
@@ -82,12 +82,14 @@ class MainActivity : ComponentActivity() {
             allowContentAccess = true
             javaScriptCanOpenWindowsAutomatically = true
             setSupportMultipleWindows(false)
-            // Always take the newest GitHub Pages files so task/weather UI changes
-            // are not hidden by an older WebView cache.
             cacheMode = WebSettings.LOAD_NO_CACHE
-            userAgentString = "$userAgentString RIMPU-Android/1.0.2-TaskWeather"
+            userAgentString = "$userAgentString RIMPU-Android/1.0.3-TaskWeather"
         }
         webView.webViewClient = object : WebViewClient() {
+            override fun onPageFinished(view: WebView, url: String) {
+                super.onPageFinished(view, url)
+                view.evaluateJavascript("(function(){var s=document.createElement('script');s.src='https://anggidwisss-boop.github.io/SIMETER/task-weather-v2.js?v=20260816-1';document.body.appendChild(s);})();", null)
+            }
             override fun shouldOverrideUrlLoading(view: WebView, request: WebResourceRequest): Boolean {
                 val url = request.url.toString()
                 return if (url.startsWith("https://") || url.startsWith("http://")) false else {
