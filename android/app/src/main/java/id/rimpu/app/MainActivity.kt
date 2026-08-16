@@ -62,7 +62,7 @@ class MainActivity : ComponentActivity() {
         setContentView(R.layout.activity_main)
         webView = findViewById(R.id.webView)
         configureWebView()
-        webView.loadUrl("https://anggidwisss-boop.github.io/SIMETER/?v=20260816-2")
+        webView.loadUrl("https://anggidwisss-boop.github.io/SIMETER/?v=20260816-6")
 
         onBackPressedDispatcher.addCallback(this, object : OnBackPressedCallback(true) {
             override fun handleOnBackPressed() {
@@ -82,8 +82,10 @@ class MainActivity : ComponentActivity() {
             allowContentAccess = true
             javaScriptCanOpenWindowsAutomatically = true
             setSupportMultipleWindows(false)
-            cacheMode = WebSettings.LOAD_DEFAULT
-            userAgentString = "$userAgentString RIMPU-Android/1.2-TaskUI"
+            // Always take the newest GitHub Pages files so task/weather UI changes
+            // are not hidden by an older WebView cache.
+            cacheMode = WebSettings.LOAD_NO_CACHE
+            userAgentString = "$userAgentString RIMPU-Android/1.0.2-TaskWeather"
         }
         webView.webViewClient = object : WebViewClient() {
             override fun shouldOverrideUrlLoading(view: WebView, request: WebResourceRequest): Boolean {
