@@ -47,11 +47,8 @@ class MainActivity : ComponentActivity() {
         val uris = if (result.resultCode == RESULT_OK && result.data != null) {
             val data = result.data!!
             val clip = data.clipData
-            if (clip != null) {
-                Array(clip.itemCount) { i -> clip.getItemAt(i).uri }
-            } else {
-                data.data?.let { arrayOf(it) } ?: emptyArray()
-            }
+            if (clip != null) Array(clip.itemCount) { i -> clip.getItemAt(i).uri }
+            else data.data?.let { arrayOf(it) } ?: emptyArray()
         } else emptyArray()
         callback.onReceiveValue(uris)
         fileCallback = null
@@ -62,12 +59,9 @@ class MainActivity : ComponentActivity() {
         setContentView(R.layout.activity_main)
         webView = findViewById(R.id.webView)
         configureWebView()
-        webView.loadUrl("https://anggidwisss-boop.github.io/SIMETER/?v=20260818-pln-final")
-
+        webView.loadUrl("https://anggidwisss-boop.github.io/SIMETER/?v=20260818-pln-final-2")
         onBackPressedDispatcher.addCallback(this, object : OnBackPressedCallback(true) {
-            override fun handleOnBackPressed() {
-                if (webView.canGoBack()) webView.goBack() else finish()
-            }
+            override fun handleOnBackPressed() { if (webView.canGoBack()) webView.goBack() else finish() }
         })
     }
 
@@ -83,74 +77,35 @@ class MainActivity : ComponentActivity() {
             javaScriptCanOpenWindowsAutomatically = true
             setSupportMultipleWindows(false)
             cacheMode = WebSettings.LOAD_NO_CACHE
-            userAgentString = "$userAgentString RIMPU-Android/1.1.0-PLN-UP3-BIMA"
+            userAgentString = "$userAgentString RIMPU-Android/1.1.1-PLN-UP3-BIMA"
         }
         webView.webViewClient = object : WebViewClient() {
             override fun onPageFinished(view: WebView, url: String) {
                 super.onPageFinished(view, url)
-                view.evaluateJavascript("(function(){var s=document.createElement('script');s.src='https://anggidwisss-boop.github.io/SIMETER/rimpu-final.js?v=20260818-pln-final';document.body.appendChild(s);})();", null)
+                view.evaluateJavascript("(function(){var s=document.createElement('script');s.src='https://anggidwisss-boop.github.io/SIMETER/rimpu-final.js?v=20260818-pln-final-2';document.body.appendChild(s);})();", null)
             }
             override fun shouldOverrideUrlLoading(view: WebView, request: WebResourceRequest): Boolean {
                 val url = request.url.toString()
-                return if (url.startsWith("https://") || url.startsWith("http://")) false else {
-                    try { startActivity(Intent(Intent.ACTION_VIEW, request.url)) } catch (_: Exception) {}
-                    true
-                }
+                return if (url.startsWith("https://") || url.startsWith("http://")) false else { try { startActivity(Intent(Intent.ACTION_VIEW, request.url)) } catch (_: Exception) {}; true }
             }
         }
         webView.webChromeClient = object : WebChromeClient() {
-            override fun onPermissionRequest(request: PermissionRequest) {
-                runOnUiThread {
-                    val resources = request.resources.filter {
-                        it == PermissionRequest.RESOURCE_VIDEO_CAPTURE ||
-                        it == PermissionRequest.RESOURCE_AUDIO_CAPTURE
-                    }.toTypedArray()
-                    if (resources.isNotEmpty()) request.grant(resources)
-                }
-            }
+            override fun onPermissionRequest(request: PermissionRequest) { runOnUiThread { val resources=request.resources.filter { it==PermissionRequest.RESOURCE_VIDEO_CAPTURE || it==PermissionRequest.RESOURCE_AUDIO_CAPTURE }.toTypedArray(); if(resources.isNotEmpty())request.grant(resources) } }
             override fun onGeolocationPermissionsShowPrompt(origin: String, callback: GeolocationPermissions.Callback) {
-                if (ContextCompat.checkSelfPermission(this@MainActivity, Manifest.permission.ACCESS_FINE_LOCATION) == PackageManager.PERMISSION_GRANTED ||
-                    ContextCompat.checkSelfPermission(this@MainActivity, Manifest.permission.ACCESS_COARSE_LOCATION) == PackageManager.PERMISSION_GRANTED) {
-                    callback.invoke(origin, true, false)
-                } else {
-                    geoOrigin = origin
-                    geoCallback = callback
-                    permissionLauncher.launch(arrayOf(Manifest.permission.ACCESS_FINE_LOCATION, Manifest.permission.ACCESS_COARSE_LOCATION))
-                }
+                if (ContextCompat.checkSelfPermission(this@MainActivity, Manifest.permission.ACCESS_FINE_LOCATION)==PackageManager.PERMISSION_GRANTED || ContextCompat.checkSelfPermission(this@MainActivity, Manifest.permission.ACCESS_COARSE_LOCATION)==PackageManager.PERMISSION_GRANTED) callback.invoke(origin,true,false)
+                else { geoOrigin=origin;geoCallback=callback;permissionLauncher.launch(arrayOf(Manifest.permission.ACCESS_FINE_LOCATION,Manifest.permission.ACCESS_COARSE_LOCATION)) }
             }
             override fun onShowFileChooser(webView: WebView, filePathCallback: ValueCallback<Array<Uri>>, fileChooserParams: FileChooserParams): Boolean {
-                fileCallback?.onReceiveValue(null)
-                fileCallback = filePathCallback
-                val intent = Intent(Intent.ACTION_OPEN_DOCUMENT).apply {
-                    addCategory(Intent.CATEGORY_OPENABLE)
-                    type = "image/*"
-                    putExtra(Intent.EXTRA_ALLOW_MULTIPLE, true)
-                }
-                filePicker.launch(intent)
-                return true
+                fileCallback?.onReceiveValue(null);fileCallback=filePathCallback
+                val intent=Intent(Intent.ACTION_OPEN_DOCUMENT).apply{addCategory(Intent.CATEGORY_OPENABLE);type="image/*";putExtra(Intent.EXTRA_ALLOW_MULTIPLE,true)}
+                filePicker.launch(intent);return true
             }
         }
-        webView.setDownloadListener { url, userAgent, contentDisposition, mimeType, _ ->
-            try {
-                val filename = URLUtil.guessFileName(url, contentDisposition, mimeType)
-                val request = DownloadManager.Request(Uri.parse(url))
-                    .setMimeType(mimeType)
-                    .setTitle(filename)
-                    .setDescription("RIMPU PLN UP3 Bima")
-                    .addRequestHeader("User-Agent", userAgent)
-                    .setNotificationVisibility(DownloadManager.Request.VISIBILITY_VISIBLE_NOTIFY_COMPLETED)
-                    .setDestinationInExternalPublicDir(Environment.DIRECTORY_DOWNLOADS, filename)
-                (getSystemService(Context.DOWNLOAD_SERVICE) as DownloadManager).enqueue(request)
-                Toast.makeText(this, "File diunduh ke folder Download", Toast.LENGTH_SHORT).show()
-            } catch (_: Exception) {
-                Toast.makeText(this, "Gagal mengunduh file", Toast.LENGTH_SHORT).show()
-            }
-        }
+        webView.setDownloadListener { url,userAgent,contentDisposition,mimeType,_ -> try {
+            val filename=URLUtil.guessFileName(url,contentDisposition,mimeType)
+            val req=DownloadManager.Request(Uri.parse(url)).setMimeType(mimeType).setTitle(filename).setDescription("RIMPU PLN UP3 Bima").addRequestHeader("User-Agent",userAgent).setNotificationVisibility(DownloadManager.Request.VISIBILITY_VISIBLE_NOTIFY_COMPLETED).setDestinationInExternalPublicDir(Environment.DIRECTORY_DOWNLOADS,filename)
+            (getSystemService(Context.DOWNLOAD_SERVICE) as DownloadManager).enqueue(req);Toast.makeText(this,"File diunduh ke folder Download",Toast.LENGTH_SHORT).show()
+        } catch (_:Exception){Toast.makeText(this,"Gagal mengunduh file",Toast.LENGTH_SHORT).show()} }
     }
-
-    override fun onDestroy() {
-        webView.stopLoading()
-        webView.destroy()
-        super.onDestroy()
-    }
+    override fun onDestroy(){webView.stopLoading();webView.destroy();super.onDestroy()}
 }
