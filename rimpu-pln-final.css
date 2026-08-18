@@ -1,0 +1,7 @@
+/* RIMPU PLN UP3 BIMA final visual layer */
+:root{--pln-blue:#063b78;--pln-blue2:#0b63c7;--pln-yellow:#ffd900;--pln-teal:#0b9d9a}
+body{background:linear-gradient(135deg,#f4f8fd 0%,#eaf2fb 55%,#fffaf3 100%)}
+.topbar{background:linear-gradient(90deg,#063b78 0%,#0878a6 55%,#0b9d9a 100%)}
+.login-panel .brand b{color:var(--pln-blue)}
+.pln-brand{display:flex;align-items:center;gap:10px}.pln-brand img{width:42px;height:42px;object-fit:contain;background:#ffd900;border-radius:7px;padding:4px}
+.primary{background:linear-gradient(135deg,#126bd4,#0a5ab7)!important}.card,.meter-card,.stat,.login-card{border-color:#d9e5f2}.modal-card{max-height:88vh;overflow:auto}
