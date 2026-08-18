@@ -1,1 +1,1 @@
-RIMPU Android 1.0.6 build trigger - pemeliharaan, interval, koordinat master, cuaca, navigasi.
+RIMPU PLN UP3 Bima Android 1.2.0 - final UI, Pemeliharaan, Interval, Koordinat MASTER_METER, Cuaca, Navigasi, dan Berita Acara PLN.
