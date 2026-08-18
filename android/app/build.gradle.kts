@@ -11,8 +11,8 @@ android {
         applicationId = "id.rimpu.app"
         minSdk = 23
         targetSdk = 36
-        versionCode = 13
-        versionName = "1.3.1"
+        versionCode = 14
+        versionName = "1.3.2"
     }
 
     buildTypes {
@@ -40,4 +40,4 @@ dependencies {
     implementation("androidx.webkit:webkit:1.14.0")
 }
 
-// RIMPU PLN UP3 Bima Android 1.3.1
+// RIMPU PLN UP3 Bima Android 1.3.2
