@@ -62,7 +62,7 @@ class MainActivity : ComponentActivity() {
         setContentView(R.layout.activity_main)
         webView = findViewById(R.id.webView)
         configureWebView()
-        webView.loadUrl("https://anggidwisss-boop.github.io/SIMETER/?v=20260818-1")
+        webView.loadUrl("https://anggidwisss-boop.github.io/SIMETER/?v=20260818-pln-final")
 
         onBackPressedDispatcher.addCallback(this, object : OnBackPressedCallback(true) {
             override fun handleOnBackPressed() {
@@ -83,12 +83,12 @@ class MainActivity : ComponentActivity() {
             javaScriptCanOpenWindowsAutomatically = true
             setSupportMultipleWindows(false)
             cacheMode = WebSettings.LOAD_NO_CACHE
-            userAgentString = "$userAgentString RIMPU-Android/1.0.7-MaintenanceNav"
+            userAgentString = "$userAgentString RIMPU-Android/1.1.0-PLN-UP3-BIMA"
         }
         webView.webViewClient = object : WebViewClient() {
             override fun onPageFinished(view: WebView, url: String) {
                 super.onPageFinished(view, url)
-                view.evaluateJavascript("(function(){var s=document.createElement('script');s.src='https://anggidwisss-boop.github.io/SIMETER/task-ui-fix.js?v=20260818-1';document.body.appendChild(s);})();", null)
+                view.evaluateJavascript("(function(){var s=document.createElement('script');s.src='https://anggidwisss-boop.github.io/SIMETER/rimpu-final.js?v=20260818-pln-final';document.body.appendChild(s);})();", null)
             }
             override fun shouldOverrideUrlLoading(view: WebView, request: WebResourceRequest): Boolean {
                 val url = request.url.toString()
@@ -136,7 +136,7 @@ class MainActivity : ComponentActivity() {
                 val request = DownloadManager.Request(Uri.parse(url))
                     .setMimeType(mimeType)
                     .setTitle(filename)
-                    .setDescription("RIMPU")
+                    .setDescription("RIMPU PLN UP3 Bima")
                     .addRequestHeader("User-Agent", userAgent)
                     .setNotificationVisibility(DownloadManager.Request.VISIBILITY_VISIBLE_NOTIFY_COMPLETED)
                     .setDestinationInExternalPublicDir(Environment.DIRECTORY_DOWNLOADS, filename)
