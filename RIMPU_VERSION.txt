@@ -1,1 +1,1 @@
-RIMPU branding package updated.
+RIMPU Android 1.0.6 build trigger - pemeliharaan, interval, koordinat master, cuaca, navigasi.
