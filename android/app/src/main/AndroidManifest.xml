@@ -9,7 +9,7 @@
     <application
         android:allowBackup="false"
         android:icon="@drawable/ic_rimpu"
-        android:label="RIMPU"
+        android:label="RIMPU PLN UP3 Bima"
         android:roundIcon="@drawable/ic_rimpu"
         android:supportsRtl="true"
         android:theme="@style/Theme.RIMPU"
