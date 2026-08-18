@@ -59,7 +59,7 @@ class MainActivity : ComponentActivity() {
         setContentView(R.layout.activity_main)
         webView = findViewById(R.id.webView)
         configureWebView()
-        webView.loadUrl("https://anggidwisss-boop.github.io/SIMETER/?v=20260818-pln-final-2")
+        webView.loadUrl("https://anggidwisss-boop.github.io/SIMETER/?v=20260818-rimpu-pln-final-v2")
         onBackPressedDispatcher.addCallback(this, object : OnBackPressedCallback(true) {
             override fun handleOnBackPressed() { if (webView.canGoBack()) webView.goBack() else finish() }
         })
@@ -77,12 +77,12 @@ class MainActivity : ComponentActivity() {
             javaScriptCanOpenWindowsAutomatically = true
             setSupportMultipleWindows(false)
             cacheMode = WebSettings.LOAD_NO_CACHE
-            userAgentString = "$userAgentString RIMPU-Android/1.1.1-PLN-UP3-BIMA"
+            userAgentString = "$userAgentString RIMPU-Android/1.2.0-PLN-UP3-BIMA"
         }
         webView.webViewClient = object : WebViewClient() {
             override fun onPageFinished(view: WebView, url: String) {
                 super.onPageFinished(view, url)
-                view.evaluateJavascript("(function(){var s=document.createElement('script');s.src='https://anggidwisss-boop.github.io/SIMETER/rimpu-final.js?v=20260818-pln-final-2';document.body.appendChild(s);})();", null)
+                view.evaluateJavascript("(function(){var s=document.createElement('script');s.src='https://anggidwisss-boop.github.io/SIMETER/rimpu-pln-final-v2.js?v=20260818-rimpu-pln-final-v2';document.body.appendChild(s);})();", null)
             }
             override fun shouldOverrideUrlLoading(view: WebView, request: WebResourceRequest): Boolean {
                 val url = request.url.toString()
