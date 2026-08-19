@@ -4,13 +4,13 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
 <meta name="theme-color" content="#063b78">
-<meta name="description" content="RIMPU PLN UP3 Bima - Rapid Inspection & Monitoring v1.3.2">
-<link rel="manifest" href="manifest.json?v=20260819-rimpu-1.3.2">
-<link rel="stylesheet" href="style.css?v=20260819-rimpu-1.3.2">
-<link rel="stylesheet" href="login-theme.css?v=20260819-rimpu-1.3.2">
-<link rel="stylesheet" href="rimpu-polish.css?v=20260819-rimpu-1.3.2">
-<link rel="stylesheet" href="rimpu-pln-final.css?v=20260819-rimpu-1.3.2">
-<title>RIMPU PLN UP3 Bima • v1.3.2</title>
+<meta name="description" content="RIMPU PLN UP3 Bima - Rapid Inspection & Monitoring v1.3.3">
+<link rel="manifest" href="manifest.json?v=20260819-rimpu-1.3.3">
+<link rel="stylesheet" href="style.css?v=20260819-rimpu-1.3.3">
+<link rel="stylesheet" href="login-theme.css?v=20260819-rimpu-1.3.3">
+<link rel="stylesheet" href="rimpu-polish.css?v=20260819-rimpu-1.3.3">
+<link rel="stylesheet" href="rimpu-pln-final.css?v=20260819-rimpu-1.3.3">
+<title>RIMPU PLN UP3 Bima • v1.3.3</title>
 <style>
 .admin-user-card{position:relative;width:100%;text-align:left;display:flex;align-items:center;justify-content:space-between;cursor:pointer;border:1px solid rgba(20,76,140,.12);background:#fff}.admin-actions{display:grid;grid-template-columns:1fr 1fr;gap:10px}.weather-location{background:#f5f8fc;border-radius:14px;padding:10px;margin:8px 0;color:#51657f}.weather-main{display:flex;align-items:center;gap:14px;padding:14px 0}.weather-icon{font-size:46px}.weather-main b{font-size:2em;color:#0b376f}.weather-grid{display:grid;grid-template-columns:1fr 1fr;gap:10px;margin:10px 0}.weather-grid>div{padding:12px;border:1px solid #e0e8f2;border-radius:14px;background:#fbfdff}.weather-grid small{display:block;color:#75869d}.weather-grid b{display:block;margin-top:4px;color:#123f77}.weather-status{padding:14px;border-radius:14px;margin:14px 0}.weather-status.ok{background:#eaf8f0;color:#17643b}.weather-status.warn{background:#fff7df;color:#805d00}.weather-loading{text-align:center;padding:30px;color:#52708f}@media(max-width:600px){.admin-actions{grid-template-columns:1fr}}
 </style>
@@ -19,9 +19,9 @@
 <div id="app">
 <section id="loginView" class="login-page">
 <div class="login-shell">
-<div class="login-visual"><div class="visual-badge">RIMPU · PLN UP3 BIMA · v1.3.2</div><div class="visual-image" aria-label="RIMPU PLN UP3 Bima"></div></div>
+<div class="login-visual"><div class="visual-badge">RIMPU · PLN UP3 BIMA · v1.3.3</div><div class="visual-image" aria-label="RIMPU PLN UP3 Bima"></div></div>
 <div class="login-panel">
-<div class="brand"><div class="logo"><img src="assets/pln-logo.svg?v=20260819" alt="PLN"></div><div><b>RIMPU PLN UP3 Bima</b><small>Rapid Inspection & Monitoring · v1.3.2</small></div></div>
+<div class="brand"><div class="logo"><img src="assets/pln-logo.svg?v=20260819" alt="PLN"></div><div><b>RIMPU PLN UP3 Bima</b><small>Rapid Inspection & Monitoring · v1.3.3</small></div></div>
 <div class="login-card">
 <div class="login-title"><div class="logo soft"><img src="assets/rimpu-logo.svg?v=20260819" alt="RIMPU"></div><div><h1>Selamat Datang</h1><p>Kelola pemeriksaan dan pemeliharaan meter dengan cepat, akurat, aman, dan terintegrasi.</p></div></div>
 <div class="chips"><span>🔐 Akses Terproteksi</span><span>☁ Spreadsheet</span><span>📍 GPS & Foto</span></div>
@@ -29,7 +29,7 @@
 <label>Kata sandi<div class="password-wrap"><input id="loginPass" type="password" autocomplete="current-password" placeholder="Kata sandi"><button id="togglePass" type="button">◉</button></div></label>
 <button id="loginBtn" class="primary big">Masuk ke RIMPU →</button><div id="loginMsg" class="msg"></div><div class="connection">● Sistem RIMPU terintegrasi · PLN UP3 Bima</div>
 <details class="connection-settings"><summary>⚙ Pengaturan koneksi</summary><label>URL Web App Google Apps Script<input id="apiUrl" placeholder="https://script.google.com/macros/s/.../exec"></label><button id="saveApi" class="secondary">Simpan & Tes Koneksi</button></details>
-</div><footer>RIMPU PLN UP3 Bima · Unit Pelaksana Pelayanan Pelanggan Bima<br>Pemeliharaan Meter Transaksi Energi · Versi 1.3.2</footer>
+</div><footer>RIMPU PLN UP3 Bima · Unit Pelaksana Pelayanan Pelanggan Bima<br>Pemeliharaan Meter Transaksi Energi · Versi 1.3.3</footer>
 </div></div>
 </section>
 <section id="mainView" hidden>
@@ -40,6 +40,6 @@
 </section></div>
 <div id="modal" class="modal" hidden aria-hidden="true" style="display:none!important"><div class="modal-card"><button class="close" id="closeModal" type="button">×</button><div id="modalBody"></div></div></div>
 <script src="https://unpkg.com/html5-qrcode@2.3.8/html5-qrcode.min.js"></script>
-<script src="app.js?v=20260819-rimpu-1.3.2"></script>
-<script src="enhancements.js?v=20260819-rimpu-1.3.2"></script><script src="finalize.js?v=20260819-rimpu-1.3.2"></script><script src="rebrand.js?v=20260819-rimpu-1.3.2"></script><script src="recent-details.js?v=20260819-rimpu-1.3.2"></script><script src="dashboard-details.js?v=20260819-rimpu-1.3.2"></script><script src="tm-photo-form.js?v=20260819-rimpu-1.3.2"></script><script src="tm-modem-fields.js?v=20260819-rimpu-1.3.2"></script><script src="admin-ui.js?v=20260819-rimpu-1.3.2"></script><script src="weather-nav.js?v=20260819-rimpu-1.3.2"></script><script src="task-ui-fix.js?v=20260819-rimpu-1.3.2"></script><script src="maintenance-nav-fix.js?v=20260819-rimpu-1.3.2"></script><script src="meter-ui-final.js?v=20260819-rimpu-1.3.2"></script><script src="rimpu-final.js?v=20260819-rimpu-1.3.2"></script><script src="rimpu-pln-final-v2.js?v=20260819-rimpu-1.3.2"></script><script src="rimpu-android-final.js?v=20260819-rimpu-1.3.2"></script><script src="rimpu-runtime-patch.js?v=20260819-rimpu-1.3.2"></script>
+<script src="app.js?v=20260819-rimpu-1.3.3"></script>
+<script src="enhancements.js?v=20260819-rimpu-1.3.3"></script><script src="finalize.js?v=20260819-rimpu-1.3.3"></script><script src="rebrand.js?v=20260819-rimpu-1.3.3"></script><script src="recent-details.js?v=20260819-rimpu-1.3.3"></script><script src="dashboard-details.js?v=20260819-rimpu-1.3.3"></script><script src="tm-photo-form.js?v=20260819-rimpu-1.3.3"></script><script src="tm-modem-fields.js?v=20260819-rimpu-1.3.3"></script><script src="admin-ui.js?v=20260819-rimpu-1.3.3"></script><script src="weather-nav.js?v=20260819-rimpu-1.3.3"></script><script src="task-ui-fix.js?v=20260819-rimpu-1.3.3"></script><script src="maintenance-nav-fix.js?v=20260819-rimpu-1.3.3"></script><script src="meter-ui-final.js?v=20260819-rimpu-1.3.3"></script><script src="rimpu-final.js?v=20260819-rimpu-1.3.3"></script><script src="rimpu-pln-final-v2.js?v=20260819-rimpu-1.3.3"></script><script src="rimpu-android-final.js?v=20260819-rimpu-1.3.3"></script><script src="rimpu-runtime-patch.js?v=20260819-rimpu-1.3.3"></script><script src="dashboard-actions-fix.js?v=20260819-rimpu-1.3.3"></script>
 </body></html>
