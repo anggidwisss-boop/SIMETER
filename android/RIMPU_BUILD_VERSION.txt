@@ -1,2 +1,2 @@
-RIMPU PLN UP3 Bima Android 1.3.2
-Fix Android WebView loading by using the canonical GitHub Pages URL without the old cache-busting query, improve connection error handling, and retain the Android-style dashboard, maintenance, interval, navigation, master coordinates, and PLN-style maintenance BA.
+RIMPU PLN UP3 Bima Android 1.4.2
+Premium header mengikuti referensi: logo PLN utuh dengan kotak kuning, petir merah, gelombang biru dan tulisan PLN; cache WebView diperbarui dan tampilan RIMPU dipoles untuk web serta APK.
