@@ -1,4 +1,4 @@
-/* RIMPU PLN v1.3.1 — modern visual layer inspired by the approved reference */
+/* RIMPU PLN v1.3.2 — dashboard polish */
 :root{--pln-blue:#063b78;--pln-blue2:#0879d9;--pln-cyan:#08a9dc;--pln-yellow:#ffd900;--pln-red:#e5262f;--ink:#12375f;--muted:#6f8299;--surface:#fff;--line:#dce7f2;--soft:#f3f8fd}
 *{box-sizing:border-box}
 body{background:radial-gradient(circle at 10% 0%,#e9f6ff 0,#f5f9fd 36%,#eef5fb 70%,#fff 100%);color:var(--ink)}
@@ -18,13 +18,15 @@ body{background:radial-gradient(circle at 10% 0%,#e9f6ff 0,#f5f9fd 36%,#eef5fb 7
 .card,.meter-card,.stat{border:1px solid var(--line)!important;border-radius:18px!important;box-shadow:0 8px 24px rgba(15,59,110,.07)!important;background:rgba(255,255,255,.96)}
 .stat{transition:.18s ease}.stat:hover,.meter-card:hover{transform:translateY(-2px);box-shadow:0 12px 28px rgba(15,59,110,.11)!important}
 .rp-home{gap:14px}.rp-info{border:1px solid var(--line);box-shadow:0 8px 24px rgba(15,59,110,.07)}
+.rp-date small{margin-right:6px}.rp-date b{white-space:nowrap}
 .rp-actions{gap:13px}.rp-tile{min-height:112px;border-radius:18px;position:relative;overflow:hidden;box-shadow:0 10px 22px rgba(0,45,90,.16);transition:.18s ease}.rp-tile:after{content:"";position:absolute;width:100px;height:100px;border-radius:50%;right:-35px;top:-35px;background:rgba(255,255,255,.12)}.rp-tile:hover{transform:translateY(-3px);box-shadow:0 15px 28px rgba(0,45,90,.2)}
 .rp-blue{background:linear-gradient(135deg,#0879d9,#075bb3)}.rp-green{background:linear-gradient(135deg,#0cae62,#087c4a)}.rp-purple{background:linear-gradient(135deg,#7954d7,#5a3fb2)}.rp-orange{background:linear-gradient(135deg,#f39a18,#e86e00)}.rp-teal{background:linear-gradient(135deg,#0aa5ad,#087a88)}
 .rp-master{border:1px solid var(--line)!important;box-shadow:0 8px 22px rgba(15,59,110,.07);border-radius:18px!important;background:#fff!important}
 .rp-brandline img{width:42px;height:42px;border-radius:10px;background:#ffd900;padding:2px;box-shadow:0 4px 12px rgba(0,0,0,.12)}
 .form input,.form select,.form textarea,input,select,textarea{border-color:#ccdbea!important;border-radius:12px!important;background:#fff!important}.form input:focus,.form select:focus,.form textarea:focus,input:focus,select:focus,textarea:focus{border-color:#0879d9!important;box-shadow:0 0 0 3px rgba(8,121,217,.11)!important;outline:0}
-.bottom-nav{background:rgba(255,255,255,.96)!important;border-top:1px solid #dce7f2!important;box-shadow:0 -8px 24px rgba(15,59,110,.08)}
+.bottom-nav{background:rgba(255,255,255,.98)!important;border-top:1px solid #dce7f2!important;box-shadow:0 -8px 24px rgba(15,59,110,.08);z-index:1000!important}
+main.container{padding-bottom:125px!important}
 .modal-card{border-radius:22px!important;border:1px solid #dce7f2;box-shadow:0 25px 70px rgba(0,35,80,.25);max-height:90vh;overflow:auto}
 .page-head h1{font-weight:900;color:#063b78}
-@media(max-width:700px){.topbar{min-height:60px}.pln-brand img{width:39px;height:39px}.rp-tile{min-height:100px}.login-shell{border-radius:0}.card,.meter-card,.stat{border-radius:15px!important}}
+@media(max-width:700px){.topbar{min-height:60px}.pln-brand img{width:39px;height:39px}.rp-tile{min-height:100px}.login-shell{border-radius:0}.card,.meter-card,.stat{border-radius:15px!important}main.container{padding-bottom:115px!important}}
 @media(prefers-reduced-motion:reduce){*{transition:none!important;animation:none!important}}
