@@ -66,7 +66,7 @@ class MainActivity : ComponentActivity() {
     }
 
     private fun loadRimpu() {
-        webView.loadUrl("https://anggidwisss-boop.github.io/SIMETER/")
+        webView.loadUrl("https://anggidwisss-boop.github.io/SIMETER/?v=1.4.2")
     }
 
     private fun configureWebView() {
@@ -81,17 +81,15 @@ class MainActivity : ComponentActivity() {
             javaScriptCanOpenWindowsAutomatically = true
             setSupportMultipleWindows(false)
             cacheMode = WebSettings.LOAD_DEFAULT
-            userAgentString = "$userAgentString RIMPU-Android/1.3.2-PLN-UP3-BIMA"
+            userAgentString = "$userAgentString RIMPU-Android/1.4.2-PLN-UP3-BIMA"
         }
         webView.webViewClient = object : WebViewClient() {
             override fun onPageFinished(view: WebView, url: String) {
                 super.onPageFinished(view, url)
-                view.evaluateJavascript("(function(){var s=document.createElement('script');s.src='https://anggidwisss-boop.github.io/SIMETER/rimpu-android-final.js?v=1.3.2';document.body.appendChild(s);})();", null)
+                view.evaluateJavascript("(function(){var s=document.createElement('script');s.src='https://anggidwisss-boop.github.io/SIMETER/rimpu-android-final.js?v=1.4.2';document.body.appendChild(s);})();", null)
             }
             override fun onReceivedError(view: WebView, request: WebResourceRequest, error: android.webkit.WebResourceError) {
-                if (request.isForMainFrame) {
-                    Toast.makeText(this@MainActivity, "RIMPU tidak dapat terhubung. Periksa internet lalu coba lagi.", Toast.LENGTH_LONG).show()
-                }
+                if (request.isForMainFrame) Toast.makeText(this@MainActivity, "RIMPU tidak dapat terhubung. Periksa internet lalu coba lagi.", Toast.LENGTH_LONG).show()
             }
             override fun shouldOverrideUrlLoading(view: WebView, request: WebResourceRequest): Boolean {
                 val url = request.url.toString()
@@ -104,55 +102,29 @@ class MainActivity : ComponentActivity() {
         webView.webChromeClient = object : WebChromeClient() {
             override fun onPermissionRequest(request: PermissionRequest) {
                 runOnUiThread {
-                    val resources = request.resources.filter {
-                        it == PermissionRequest.RESOURCE_VIDEO_CAPTURE || it == PermissionRequest.RESOURCE_AUDIO_CAPTURE
-                    }.toTypedArray()
+                    val resources = request.resources.filter { it == PermissionRequest.RESOURCE_VIDEO_CAPTURE || it == PermissionRequest.RESOURCE_AUDIO_CAPTURE }.toTypedArray()
                     if (resources.isNotEmpty()) request.grant(resources)
                 }
             }
             override fun onGeolocationPermissionsShowPrompt(origin: String, callback: GeolocationPermissions.Callback) {
-                if (ContextCompat.checkSelfPermission(this@MainActivity, Manifest.permission.ACCESS_FINE_LOCATION) == PackageManager.PERMISSION_GRANTED ||
-                    ContextCompat.checkSelfPermission(this@MainActivity, Manifest.permission.ACCESS_COARSE_LOCATION) == PackageManager.PERMISSION_GRANTED) {
-                    callback.invoke(origin, true, false)
-                } else {
-                    geoOrigin = origin
-                    geoCallback = callback
-                    permissionLauncher.launch(arrayOf(Manifest.permission.ACCESS_FINE_LOCATION, Manifest.permission.ACCESS_COARSE_LOCATION))
-                }
+                if (ContextCompat.checkSelfPermission(this@MainActivity, Manifest.permission.ACCESS_FINE_LOCATION) == PackageManager.PERMISSION_GRANTED || ContextCompat.checkSelfPermission(this@MainActivity, Manifest.permission.ACCESS_COARSE_LOCATION) == PackageManager.PERMISSION_GRANTED) callback.invoke(origin, true, false)
+                else { geoOrigin = origin; geoCallback = callback; permissionLauncher.launch(arrayOf(Manifest.permission.ACCESS_FINE_LOCATION, Manifest.permission.ACCESS_COARSE_LOCATION)) }
             }
             override fun onShowFileChooser(webView: WebView, filePathCallback: ValueCallback<Array<Uri>>, fileChooserParams: FileChooserParams): Boolean {
-                fileCallback?.onReceiveValue(null)
-                fileCallback = filePathCallback
-                val intent = Intent(Intent.ACTION_OPEN_DOCUMENT).apply {
-                    addCategory(Intent.CATEGORY_OPENABLE)
-                    type = "image/*"
-                    putExtra(Intent.EXTRA_ALLOW_MULTIPLE, true)
-                }
-                filePicker.launch(intent)
-                return true
+                fileCallback?.onReceiveValue(null); fileCallback = filePathCallback
+                val intent = Intent(Intent.ACTION_OPEN_DOCUMENT).apply { addCategory(Intent.CATEGORY_OPENABLE); type = "image/*"; putExtra(Intent.EXTRA_ALLOW_MULTIPLE, true) }
+                filePicker.launch(intent); return true
             }
         }
         webView.setDownloadListener { url, userAgent, contentDisposition, mimeType, _ ->
             try {
                 val filename = URLUtil.guessFileName(url, contentDisposition, mimeType)
-                val req = DownloadManager.Request(Uri.parse(url))
-                    .setMimeType(mimeType)
-                    .setTitle(filename)
-                    .setDescription("RIMPU PLN UP3 Bima")
-                    .addRequestHeader("User-Agent", userAgent)
-                    .setNotificationVisibility(DownloadManager.Request.VISIBILITY_VISIBLE_NOTIFY_COMPLETED)
-                    .setDestinationInExternalPublicDir(Environment.DIRECTORY_DOWNLOADS, filename)
+                val req = DownloadManager.Request(Uri.parse(url)).setMimeType(mimeType).setTitle(filename).setDescription("RIMPU PLN UP3 Bima").addRequestHeader("User-Agent", userAgent).setNotificationVisibility(DownloadManager.Request.VISIBILITY_VISIBLE_NOTIFY_COMPLETED).setDestinationInExternalPublicDir(Environment.DIRECTORY_DOWNLOADS, filename)
                 (getSystemService(Context.DOWNLOAD_SERVICE) as DownloadManager).enqueue(req)
                 Toast.makeText(this, "File diunduh ke folder Download", Toast.LENGTH_SHORT).show()
-            } catch (_: Exception) {
-                Toast.makeText(this, "Gagal mengunduh file", Toast.LENGTH_SHORT).show()
-            }
+            } catch (_: Exception) { Toast.makeText(this, "Gagal mengunduh file", Toast.LENGTH_SHORT).show() }
         }
     }
 
-    override fun onDestroy() {
-        webView.stopLoading()
-        webView.destroy()
-        super.onDestroy()
-    }
+    override fun onDestroy() { webView.stopLoading(); webView.destroy(); super.onDestroy() }
 }
