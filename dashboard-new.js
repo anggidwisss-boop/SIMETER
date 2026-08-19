@@ -1,4 +1,4 @@
-/* RIMPU PLN UP3 Bima - Dashboard Baru v1.4.0 */
+/* RIMPU PLN UP3 Bima - Dashboard Baru v1.4.1 */
 (function(){
 'use strict';
 const $=id=>document.getElementById(id);
@@ -16,5 +16,7 @@ function renderRecent(){const a=history.slice(0,6);$('rdRecent').innerHTML=a.len
 function renderAlerts(a){$('rdAlerts').innerHTML=a.length?a.slice(0,5).map(x=>{const n=daysUntil(x.jatuhTempo);return `<div class="rd-alert ${n<0?'danger':''}"><span>⚠️</span><div><b>${esc(x.nomorMeter||'-')}</b><small>${n<0?'Terlambat '+Math.abs(n)+' hari':'Jatuh tempo '+esc(x.jatuhTempo)}</small></div></div>`}).join(''):`<div class="rd-empty ok">✓ Tidak ada meter yang mendekati jatuh tempo.</div>`}
 function bind(){const map={rpDashMaint:'doMaintenance',rpDashInterval:'doInterval',rpDashBA:'doBA',rpDashWeather:'doWeather',rpDashNav:'doNav',rpDashReport:'doReport'};Object.entries(map).forEach(([id,fn])=>{const b=$(id);if(b)b.onclick=e=>{e.preventDefault();if(window.rimpuDashboardActions?.[fn])window.rimpuDashboardActions[fn]();else if(typeof window[fn]==='function')window[fn]();}});const h=$('rdOpenHistory');if(h)h.onclick=()=>navigate('meters')}
 window.renderDashboardNew=render;
-const old=window.renderDashboard;window.renderDashboard=function(){render();};
+window.renderDashboard=function(){render();};
+const previousNavigate=window.navigate;
+window.navigate=function(page){if(page==='dashboard'){currentPage='dashboard';hideViews();$('pageTitle').textContent='Ringkasan';$('dashboard').hidden=false;render();document.querySelectorAll('.bottom-nav button').forEach(b=>b.classList.toggle('active',b.dataset.page===page));return;}return previousNavigate.apply(this,arguments);};
 })();
