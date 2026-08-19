@@ -11,8 +11,8 @@ android {
         applicationId = "id.rimpu.app"
         minSdk = 23
         targetSdk = 36
-        versionCode = 14
-        versionName = "1.3.2"
+        versionCode = 15
+        versionName = "1.4.2"
     }
 
     buildTypes {
@@ -40,4 +40,4 @@ dependencies {
     implementation("androidx.webkit:webkit:1.14.0")
 }
 
-// RIMPU PLN UP3 Bima Android 1.3.2
+// RIMPU PLN UP3 Bima Android 1.4.2 — premium PLN header/logo
