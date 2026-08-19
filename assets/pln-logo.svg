@@ -1,10 +1,11 @@
-<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 340 515" role="img" aria-label="PLN">
-<rect x="0" y="0" width="340" height="340" fill="#ffd900"/>
-<g fill="none" stroke="#0087c9" stroke-width="27" stroke-linecap="round">
-  <path d="M38 116 C78 91 118 91 158 116 S238 141 302 116"/>
-  <path d="M38 174 C78 149 118 149 158 174 S238 199 302 174"/>
-  <path d="M38 232 C78 207 118 207 158 232 S238 257 302 232"/>
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 180 255" role="img" aria-label="PLN">
+<rect width="180" height="255" fill="#fff"/>
+<rect x="8" y="8" width="164" height="164" fill="#ffdf00"/>
+<g fill="none" stroke="#008bd2" stroke-width="11" stroke-linecap="round">
+<path d="M38 76 C60 62 82 62 104 76 S148 90 160 76"/>
+<path d="M38 100 C60 86 82 86 104 100 S148 114 160 100"/>
+<path d="M38 124 C60 110 82 110 104 124 S148 138 160 124"/>
 </g>
-<path d="M188 28 L145 151 H181 L145 301 L224 177 H188 L227 28 Z" fill="#e5252f"/>
-<text x="170" y="425" text-anchor="middle" font-family="Arial,Helvetica,sans-serif" font-size="78" font-weight="700" fill="#08a9df" letter-spacing="8">PLN</text>
+<path d="M91 26 L68 91 H87 L68 145 L113 101 H94 L116 26 Z" fill="#e5252f"/>
+<text x="90" y="225" text-anchor="middle" font-family="Arial,Helvetica,sans-serif" font-size="43" font-weight="700" fill="#08a9df" letter-spacing="4">PLN</text>
 </svg>
